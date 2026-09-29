@@ -158,6 +158,8 @@
       <div class="p-kicker">Character · ${esc(c.faction)}</div>
       <div class="p-title">${esc(c.name)}</div>
       <div class="p-sub">${wiki(c.wiki)}</div>
+      ${window.SW_ARCS && SW_ARCS[c.id] ? `<p class="p-text">${esc(SW_ARCS[c.id])}</p>` : ""}
+      ${(VISUALS["c:" + c.id] = { id: "c:" + c.id, name: c.name, wiki: c.wiki, sfq: "star wars " + shortName(c.name) }, visualBlock("c:" + c.id))}
       <div class="stat"><div><div class="k">Appearances</div><div class="v">${ms.length}</div></div><div><div class="k">Homeworld</div><div class="v" style="font-size:13px;padding-top:6px">${c.home && PL[c.home] ? link("planet", c.home, PL[c.home].name) : "Unknown"}</div></div></div>
       ${c.antagonist && CH[cid(c.antagonist)] ? sec("Main antagonist", null, charLinks([c.antagonist])) : ""}
       <div class="p-sec"><div class="p-h"><span>Family</span><b>${r.parents.length + r.siblings.length + r.spouse.length + r.children.length}</b></div>${(r.parents.length || r.siblings.length || r.spouse.length || r.children.length) ? `${rel("Parents", r.parents)}${rel("Siblings", r.siblings)}${rel("Spouse", r.spouse)}${rel("Children", r.children)}` : `<div class="idle">No recorded family.</div>`}</div>
@@ -180,6 +182,8 @@
       <div class="p-title">${esc(p.name)}</div>
       <div class="p-sub">${wiki(p.name.replace(/ /g, "_"))}</div>
       ${p.blurb ? `<p class="p-text">${esc(p.blurb)}</p>` : ""}
+      ${window.SW_GEO && SW_GEO[p.id] ? `<div class="p-sec"><div class="p-h"><span>Geography</span></div><p class="p-text">${esc(SW_GEO[p.id])}</p></div>` : ""}
+      ${(VISUALS["p:" + p.id] = { id: "p:" + p.id, name: p.name, wiki: p.name.replace(/ /g, "_"), sfq: "star wars planet " + p.name }, visualBlock("p:" + p.id))}
       <div class="stat"><div><div class="k">Appearances</div><div class="v">${ms.length}</div></div><div><div class="k">Natives</div><div class="v">${nat.length}</div></div></div>
       ${sec("Key events", ev.length, ev.map((e) => `<div class="evt">${esc(e.text)} <button data-kind="media" data-id="${e.media}">${esc(MD[e.media].title)} →</button></div>`).join(""))}
       ${sec("Native characters", nat.length, charLinks(nat.map((c) => c.id)))}
@@ -227,8 +231,7 @@
   }
   // Community 3D models from Sketchfab, searched live and shown in Sketchfab's own viewer.
   const sfCache = {};
-  async function load3d(t, step = 0) {
-    const box = $("#p3d"), cred = $("#p3dCred");
+  async function load3d(t, step = 0, box = $("#p3d"), cred = $("#p3dCred")) {
     if (!box) return;
     if (!sfCache[t.id]) {
       box.innerHTML = `<div class="msg">Searching Sketchfab for a model…</div>`; cred.innerHTML = "";
@@ -248,13 +251,12 @@
     if (!box.isConnected) return;
     box.innerHTML = `<iframe title="${esc(m.name)}" src="https://sketchfab.com/models/${m.uid}/embed?autostart=1&ui_theme=dark&ui_infos=0&ui_watermark=0&ui_hint=0&transparent=1&preload=1" allow="autoplay; fullscreen; xr-spatial-tracking" allowfullscreen></iframe>`;
     const lic = m.license && (m.license.label || m.license);
-    cred.innerHTML = `<span><a href="${m.viewerUrl || ("https://sketchfab.com/3d-models/" + m.uid)}" target="_blank" rel="noopener">${esc(m.name)}</a> by ${esc(m.user ? m.user.displayName || m.user.username : "unknown")}${lic ? " · " + esc(lic) : ""} · ${c.i + 1}/${c.list.length}</span><button id="sfNext">Next model</button>`;
-    $("#sfNext").addEventListener("click", () => load3d(t, 1));
+    cred.innerHTML = `<span><a href="${m.viewerUrl || ("https://sketchfab.com/3d-models/" + m.uid)}" target="_blank" rel="noopener">${esc(m.name)}</a> by ${esc(m.user ? m.user.displayName || m.user.username : "unknown")}${lic ? " · " + esc(lic) : ""} · ${c.i + 1}/${c.list.length}</span><button class="sfNext">Next model</button>`;
+    $(".sfNext", cred).addEventListener("click", () => load3d(t, 1, box, cred));
   }
   // Lead image of the item's Wookieepedia article, fetched live from the MediaWiki API.
   const realCache = {};
-  async function loadReal(t) {
-    const box = $("#pReal");
+  async function loadReal(t, box = $("#pReal")) {
     if (!box) return;
     const page = D.W(t.wiki);
     const credit = `<div class="cred">Image via <a href="${page}" target="_blank" rel="noopener">Wookieepedia</a> · © Lucasfilm, shown for reference</div>`;
@@ -274,9 +276,26 @@
     }
   }
 
+  // On-demand visual block: Sketchfab model or Wookieepedia still, loaded when the operator asks.
+  function visualBlock(key) {
+    return `<div class="p-visual" data-vkey="${key}">
+      <div class="p-switch" role="tablist"><button class="chip" data-vmode="3d" aria-pressed="false">3D model</button><button class="chip" data-vmode="real" aria-pressed="false">Still</button></div>
+      <div class="p-3d" hidden></div><div class="p-cred" hidden></div><div class="p-real" hidden></div></div>`;
+  }
+  const VISUALS = {};
   panelBody.addEventListener("click", (e) => {
     const b = e.target.closest("[data-kind]");
-    if (b) select(b.dataset.kind, b.dataset.id, true);
+    if (b) return select(b.dataset.kind, b.dataset.id, true);
+    const v = e.target.closest("[data-vmode]");
+    if (v) {
+      const wrap = v.closest(".p-visual"), spec = VISUALS[wrap.dataset.vkey];
+      const on = v.getAttribute("aria-pressed") !== "true";
+      $$("[data-vmode]", wrap).forEach((x) => x.setAttribute("aria-pressed", String(x === v && on)));
+      const mode = on ? v.dataset.vmode : null;
+      $(".p-3d", wrap).hidden = mode !== "3d"; $(".p-cred", wrap).hidden = mode !== "3d"; $(".p-real", wrap).hidden = mode !== "real";
+      if (mode === "3d") load3d(spec, 0, $(".p-3d", wrap), $(".p-cred", wrap));
+      if (mode === "real") loadReal(spec, $(".p-real", wrap));
+    }
   });
   $("#pClose").addEventListener("click", () => { panel.classList.remove("open"); });
 
@@ -590,7 +609,7 @@
 
   // ------------------------------------------------------------- controls
   $$(".tab").forEach((t) => t.addEventListener("click", () => { stars.warp(null, null, 5); SWSound.tab(); setView(t.dataset.view); }));
-  document.addEventListener("click", (e) => { if (e.target.closest(".chip, .lk, .zoomctl button, .p-close, .evt button, #sfNext")) SWSound.click(); }, true);
+  document.addEventListener("click", (e) => { if (e.target.closest(".chip, .lk, .zoomctl button, .p-close, .evt button, .sfNext")) SWSound.click(); }, true);
   document.addEventListener("pointerover", (e) => { if (e.target.closest(".bubble, .card .head, .tcard, .tab, .chip, .lk")) SWSound.tick(); }, true);
   document.addEventListener("pointerdown", () => SWSound.unlock(), { once: true, capture: true });
   const muteBtn = $("#mute");

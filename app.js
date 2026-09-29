@@ -820,8 +820,19 @@
   paintMute();
   muteBtn.addEventListener("click", () => { SWSound.toggleMute(); paintMute(); });
   // HUD readouts: clock and cursor position
-  const roClock = $("#roClock"), roPos = $("#roPos");
-  setInterval(() => { const d = new Date(); roClock.textContent = `GST ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`; }, 1000);
+  const roPos = $("#roPos");
+  // Live visit counter (Abacus, an open hit-counter service). One hit per browser session.
+  (async function visits() {
+    const out = $("#roVisits"), tab = $("#pVisits");
+    let seen = false; try { seen = sessionStorage.getItem("sw-visit") === "1"; } catch (e) {}
+    try {
+      const j = await (await fetch(`https://abacus.jasoncameron.dev/${seen ? "get" : "hit"}/nishitanirmal-sw-explorer/visits`)).json();
+      try { sessionStorage.setItem("sw-visit", "1"); } catch (e) {}
+      const n = +j.value || 0, t0 = performance.now(), dur = reduced ? 0 : 1200;
+      const paint = (v) => { const str = v.toLocaleString("en-US"); out.textContent = str.padStart(6, "0"); tab.textContent = `${str} visits`; };
+      (function tick() { const u = dur ? Math.min(1, (performance.now() - t0) / dur) : 1; paint(Math.round(n * (1 - Math.pow(1 - u, 3)))); if (u < 1) requestAnimationFrame(tick); })();
+    } catch (e) { out.textContent = "offline"; }
+  })();
   addEventListener("pointermove", (e) => { roPos.textContent = `Cursor ${String(e.clientX).padStart(4, "0")} · ${String(e.clientY).padStart(4, "0")}`; }, { passive: true });
   $$("#typeFilters .chip").forEach((b) => b.addEventListener("click", () => {
     const on = b.getAttribute("aria-pressed") !== "true";

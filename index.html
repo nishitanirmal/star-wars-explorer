@@ -295,6 +295,7 @@ svg.dim .bubble:not(.sel):not(.rel) { opacity: .28; }
   @keyframes drawer-bounce { 0%, 100% { transform: translateY(calc(100% - var(--peek))); } 35% { transform: translateY(calc(100% - var(--peek) - 26px)); } 70% { transform: translateY(calc(100% - var(--peek) + 4px)); } }
   #panel.bounce:not(.open) { animation: drawer-bounce .55s cubic-bezier(.2,.8,.2,1); }
   .p-hlabel small { font: 10px var(--mono); letter-spacing: .1em; color: var(--ink-dim); margin-left: 10px; text-transform: none; }
+  #pHint:not(:empty) + #pVisits { display: none; }
   #panelBody { touch-action: pan-y; overscroll-behavior: contain; padding: 12px 16px calc(24px + env(safe-area-inset-bottom, 0px)); }
   .p-handle::after { content: ""; position: absolute; left: 0; right: 0; top: -14px; height: 14px; }  /* bigger swipe target above the grip */
   .p-handle { display: grid; grid-template-columns: 1fr auto; align-items: center; height: var(--peek); padding: 0 12px 0 16px; position: relative; cursor: grab; border-bottom: 1px solid var(--line-soft); }
@@ -369,7 +370,7 @@ svg.dim .bubble:not(.sel):not(.rel) { opacity: .28; }
   </div>
 </header>
 
-<div id="status"><div class="readout"><span><span class="blink">●</span> Link <b>Online</b></span><span id="roClock"></span></div><div class="readout right"><span id="roPos">Cursor 0000 · 0000</span><span id="roView"></span></div></div>
+<div id="status"><div class="readout"><span><span class="blink">●</span> Visits <b id="roVisits">------</b></span></div><div class="readout right"><span id="roPos">Cursor 0000 · 0000</span><span id="roView"></span></div></div>
 <main id="stage">
   <section class="view on" id="v-timeline" aria-label="Timeline">
     <div class="tl-head">
@@ -395,17 +396,17 @@ svg.dim .bubble:not(.sel):not(.rel) { opacity: .28; }
 </main>
 
 <aside id="panel" aria-live="polite">
-  <div class="p-handle" id="pHandle"><span class="grip" aria-hidden="true"></span><span class="p-hlabel">Details<small id="pHint"></small></span><button class="p-close" id="pClose">Close</button></div>
+  <div class="p-handle" id="pHandle"><span class="grip" aria-hidden="true"></span><span class="p-hlabel">Details<small id="pHint"></small><small id="pVisits"></small></span><button class="p-close" id="pClose">Close</button></div>
   <div id="panelBody"></div>
 </aside>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="data.js?v=202609300415"></script>
-<script src="arcs.js?v=202609300415"></script>
-<script src="sites.js?v=202609300415"></script>
-<script src="models.js?v=202609300415"></script>
-<script src="sound.js?v=202609300415"></script>
-<script src="app.js?v=202609300415"></script>
+<script src="data.js?v=202609300418"></script>
+<script src="arcs.js?v=202609300418"></script>
+<script src="sites.js?v=202609300418"></script>
+<script src="models.js?v=202609300418"></script>
+<script src="sound.js?v=202609300418"></script>
+<script src="app.js?v=202609300418"></script>
 </body>
 </html>

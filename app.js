@@ -168,6 +168,7 @@
       ${sec("Appears in", ms.length, mediaLinks(ms))}
       ${sec("Uses", null, techLinksForChar(c))}
     `);
+    loadVisuals();
   }
   function techLinksForChar(c) {
     const t = D.tech.filter((t) => t.users.includes(c.id));
@@ -189,6 +190,7 @@
       ${sec("Native characters", nat.length, charLinks(nat.map((c) => c.id)))}
       ${sec("Media set here", ms.length, mediaLinks(ms))}
     `);
+    loadVisuals();
   }
   function panelCreator(c) {
     const ms = IX.creatorMedia[c.id] || [];
@@ -251,37 +253,47 @@
     if (!box.isConnected) return;
     box.innerHTML = `<iframe title="${esc(m.name)}" src="https://sketchfab.com/models/${m.uid}/embed?autostart=1&ui_theme=dark&ui_infos=0&ui_watermark=0&ui_hint=0&transparent=1&preload=1" allow="autoplay; fullscreen; xr-spatial-tracking" allowfullscreen></iframe>`;
     const lic = m.license && (m.license.label || m.license);
-    cred.innerHTML = `<span><a href="${m.viewerUrl || ("https://sketchfab.com/3d-models/" + m.uid)}" target="_blank" rel="noopener">${esc(m.name)}</a> by ${esc(m.user ? m.user.displayName || m.user.username : "unknown")}${lic ? " · " + esc(lic) : ""} · ${c.i + 1}/${c.list.length}</span><button class="sfNext">Next model</button>`;
+    cred.innerHTML = `<span class="who"><a href="${m.viewerUrl || ("https://sketchfab.com/3d-models/" + m.uid)}" target="_blank" rel="noopener">${esc(m.name)}</a> by ${esc(m.user ? m.user.displayName || m.user.username : "unknown")}</span><span class="lic">${lic ? esc(lic) + " · " : ""}Sketchfab · ${c.i + 1} of ${c.list.length}</span><button class="sfNext">Next model</button>`;
     $(".sfNext", cred).addEventListener("click", () => load3d(t, 1, box, cred));
   }
-  // Lead image of the item's Wookieepedia article, fetched live from the MediaWiki API.
+  // Lead image of the item's article: Wookieepedia first, Wikipedia second.
+  // Wookieepedia's image host refuses requests that carry a referrer, so the img sends none.
   const realCache = {};
+  async function fetchStill(t) {
+    const title = decodeURIComponent(t.wiki);
+    try {
+      const j = await (await fetch(`https://starwars.fandom.com/api.php?action=query&format=json&origin=*&redirects=1&prop=pageimages&piprop=thumbnail&pithumbsize=900&titles=${encodeURIComponent(title)}`)).json();
+      const pg = Object.values(j.query.pages)[0];
+      if (pg && pg.thumbnail && pg.thumbnail.source) return { src: pg.thumbnail.source, from: "Wookieepedia", page: D.W(t.wiki) };
+    } catch (e) {}
+    try {
+      const j = await (await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`)).json();
+      if (j.thumbnail && j.thumbnail.source) return { src: j.thumbnail.source.replace(/\?.*$/, ""), from: "Wikipedia", page: j.content_urls ? j.content_urls.desktop.page : "" };
+    } catch (e) {}
+    return null;
+  }
   async function loadReal(t, box = $("#pReal")) {
     if (!box) return;
     const page = D.W(t.wiki);
-    const credit = `<div class="cred">Image via <a href="${page}" target="_blank" rel="noopener">Wookieepedia</a> · © Lucasfilm, shown for reference</div>`;
-    if (realCache[t.id]) { box.innerHTML = realCache[t.id] === "none" ? `<div class="msg">No image on the Wookieepedia article.<br><a href="${page}" target="_blank" rel="noopener">Open the article ↗</a></div>` : `<img src="${realCache[t.id]}" alt="${esc(t.name)}">${credit}`; return; }
-    box.innerHTML = `<div class="msg">Requesting archive image…</div>`;
-    try {
-      const url = `https://starwars.fandom.com/api.php?action=query&format=json&origin=*&redirects=1&prop=pageimages&piprop=thumbnail&pithumbsize=900&titles=${encodeURIComponent(decodeURIComponent(t.wiki))}`;
-      const r = await fetch(url);
-      const j = await r.json();
-      const pg = Object.values(j.query.pages)[0];
-      const src = pg && pg.thumbnail && pg.thumbnail.source;
-      realCache[t.id] = src || "none";
-      if (!box.isConnected) return;
-      box.innerHTML = src ? `<img src="${src}" alt="${esc(t.name)}">${credit}` : `<div class="msg">No image on the Wookieepedia article.<br><a href="${page}" target="_blank" rel="noopener">Open the article ↗</a></div>`;
-    } catch (err) {
-      box.innerHTML = `<div class="msg">Could not reach Wookieepedia.<br><a href="${page}" target="_blank" rel="noopener">Open the article ↗</a></div>`;
-    }
+    const none = () => { box.classList.add("none"); box.innerHTML = `<div class="msg">No image available · <a href="${page}" target="_blank" rel="noopener">Open the archive entry ↗</a></div>`; };
+    const show = (r) => {
+      box.classList.remove("none");
+      box.innerHTML = `<img src="${r.src}" alt="${esc(t.name)}" referrerpolicy="no-referrer"><div class="cred">Image via <a href="${r.page || page}" target="_blank" rel="noopener">${r.from}</a> · © Lucasfilm, shown for reference</div>`;
+      $("img", box).addEventListener("error", () => { realCache[t.id] = "none"; none(); });
+    };
+    if (realCache[t.id]) { realCache[t.id] === "none" ? none() : show(realCache[t.id]); return; }
+    box.classList.add("none"); box.innerHTML = `<div class="msg">Requesting archive image…</div>`;
+    const r = await fetchStill(t);
+    realCache[t.id] = r || "none";
+    if (!box.isConnected) return;
+    r ? show(r) : none();
   }
 
   // On-demand visual block: Sketchfab model or Wookieepedia still, loaded when the operator asks.
   function visualBlock(key) {
-    return `<div class="p-visual" data-vkey="${key}">
-      <div class="p-switch" role="tablist"><button class="chip" data-vmode="3d" aria-pressed="false">3D model</button><button class="chip" data-vmode="real" aria-pressed="false">Still</button></div>
-      <div class="p-3d" hidden></div><div class="p-cred" hidden></div><div class="p-real" hidden></div></div>`;
+    return `<div class="p-visual" data-vkey="${key}"><div class="p-real none"><div class="msg">Requesting archive image…</div></div></div>`;
   }
+  function loadVisuals() { $$(".p-visual", panelBody).forEach((w) => loadReal(VISUALS[w.dataset.vkey], $(".p-real", w))); }
   const VISUALS = {};
   panelBody.addEventListener("click", (e) => {
     const b = e.target.closest("[data-kind]");
@@ -328,6 +340,7 @@
     state.view = v;
     $$(".tab").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.view === v)));
     $$(".view").forEach((s) => s.classList.toggle("on", s.id === "v-" + v));
+    const rv = $("#roView"); if (rv) rv.textContent = `Mode ${v}`;
     if (push) { history.replaceState(null, "", "#" + v); }
     render(v);
     if (!state.sel || KIND_VIEW[state.sel.kind] !== v) { state.sel = null; idlePanel(); }
@@ -631,6 +644,8 @@
     e.currentTarget.setAttribute("aria-pressed", String(state.nonCanon));
     renderAll();
   });
+  function fitBar() { document.documentElement.style.setProperty("--bar-h", $("#bar").offsetHeight + "px"); }
+  fitBar(); new ResizeObserver(fitBar).observe($("#bar"));
   let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => render(state.view), 200); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && state.sel) clearSel(); });
 

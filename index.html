@@ -29,6 +29,7 @@
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { height: 100%; }
 body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 14px; overflow: hidden; }
 a { color: var(--glow); }
@@ -54,7 +55,11 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 #panel::after { content: ""; position: absolute; left: 3px; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--glow), transparent); top: 0; opacity: 0; pointer-events: none; }
 #panel.scan::after { animation: scanline .45s linear; }
 @keyframes scanline { from { top: 0; opacity: .9; } to { top: 100%; opacity: 0; } }
-.readout { display: flex; gap: 14px; font: 10px var(--mono); color: var(--ink-dim); letter-spacing: .12em; text-transform: uppercase; white-space: nowrap; font-variant-numeric: tabular-nums; }
+#status { position: fixed; left: 0; right: var(--panel-w); bottom: 0; z-index: 3; height: 24px; padding: 0 16px calc(env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: 18px;
+  font: 10px var(--mono); color: var(--ink-dim); letter-spacing: .12em; text-transform: uppercase; white-space: nowrap; font-variant-numeric: tabular-nums;
+  background: linear-gradient(transparent, var(--bg) 40%); border-top: 1px solid var(--line-soft); pointer-events: none; }
+#status .readout { display: flex; gap: 18px; }
+#status .right { margin-left: auto; }
 .readout b { color: var(--green); font-weight: 500; }
 .readout .blink { animation: blink 1.6s steps(2) infinite; color: var(--red); }
 @keyframes blink { 50% { opacity: 0; } }
@@ -65,26 +70,25 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   background-size: 64px 64px; mask-image: radial-gradient(ellipse at 40% 50%, #000 20%, transparent 75%); }
 
 /* ---------- top bar ---------- */
-#bar { position: fixed; top: env(safe-area-inset-top, 0px); left: 0; right: 0; z-index: 5; height: var(--bar-h);
-  display: grid; grid-template-rows: auto auto; gap: 8px; padding: 12px 16px 10px;
+#bar { position: fixed; top: env(safe-area-inset-top, 0px); left: 0; right: 0; z-index: 5; min-height: var(--bar-h);
+  display: grid; grid-template-rows: auto auto; gap: 10px; padding: 10px 16px 0;
   background: linear-gradient(var(--bg) 70%, transparent); }
 .brand { display: flex; align-items: baseline; gap: 14px; min-width: 0; }
 .brand h1 { font: 15px/1 var(--display); letter-spacing: .18em; margin: 0; text-transform: uppercase; white-space: nowrap; }
 .brand .sub { font: 11px var(--mono); color: var(--ink-dim); letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.row1 { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-width: 0; }
-.tabs { overflow-x: auto; flex-shrink: 0; max-width: 100%; scrollbar-width: none; }
+.row1 { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-width: 0; flex-wrap: wrap; }
+.row2 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tabs { display: flex; justify-content: center; gap: 4px; overflow-x: auto; max-width: 100%; scrollbar-width: none; border-top: 1px solid var(--line-soft); padding: 8px 0 10px; }
 .tabs::-webkit-scrollbar { display: none; }
-.row2 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.tabs { display: flex; gap: 2px; }
-.tab { white-space: nowrap; font: 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; padding: 8px 12px; color: var(--ink-dim);
+.tab { white-space: nowrap; font: 13px var(--display); letter-spacing: .16em; text-transform: uppercase; padding: 10px 20px; color: var(--ink-dim);
   border: 1px solid transparent; position: relative; }
 .tab:hover { color: var(--ink); }
 .tab[aria-selected="true"] { color: var(--ink); border-color: var(--line); background: var(--fill); }
-.tab[aria-selected="true"]::before { content: ""; position: absolute; left: 6px; top: 50%; width: 4px; height: 4px; margin-top: -2px; background: var(--red); }
-.tab[aria-selected="true"] { padding-left: 18px; }
+.tab[aria-selected="true"]::before { content: ""; position: absolute; left: 8px; top: 50%; width: 5px; height: 5px; margin-top: -2px; background: var(--red); box-shadow: 0 0 8px var(--red); }
+.tab[aria-selected="true"] { padding-left: 24px; }
 .filters { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .flabel { font: 10px var(--mono); color: var(--ink-dim); letter-spacing: .14em; text-transform: uppercase; margin-right: 4px; }
-.chip { font: 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: 5px 10px; border: 1px solid var(--line-soft); color: var(--ink-dim); }
+.chip { font: 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: 4px 8px; border: 1px solid var(--line-soft); color: var(--ink-dim); }
 .chip[aria-pressed="true"] { color: var(--ink); border-color: var(--line); background: var(--fill); box-shadow: inset 0 0 12px rgba(63,106,255,.25); }
 .chip.warn[aria-pressed="true"] { border-color: var(--amber); color: var(--amber); background: rgba(255,181,71,.08); box-shadow: none; }
 .sep { width: 1px; height: 18px; background: var(--line-soft); margin: 0 6px; }
@@ -143,7 +147,8 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .p-visual .p-switch { margin-top: 0; }
 .p-visual .p-3d, .p-visual .p-real { margin-top: 8px; }
 .p-switch .chip { flex: 1; text-align: center; }
-.p-real { width: 100%; aspect-ratio: 1 / .8; border: 1px solid var(--line-soft); margin: 12px 0; position: relative; background: #000; display: grid; place-items: center; overflow: hidden; }
+.p-real { width: 100%; aspect-ratio: 1 / .8; border: 1px solid var(--line-soft); margin: 12px 0; position: relative; background: rgba(2,3,10,.6); display: grid; place-items: center; overflow: hidden; }
+.p-real.none { aspect-ratio: auto; padding: 14px; }
 .p-real img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
 .p-real .cred { position: absolute; left: 0; right: 0; bottom: 0; font: 10px var(--mono); color: var(--ink-dim); letter-spacing: .08em; padding: 5px 8px; background: rgba(2,3,10,.8); }
 .p-real .cred a { color: var(--ink-dim); }
@@ -151,8 +156,11 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .p-3d { width: 100%; aspect-ratio: 1 / .9; border: 1px solid var(--line-soft); margin: 12px 0; position: relative; background: #000; }
 .p-3d iframe { width: 100%; height: 100%; border: 0; display: block; }
 .p-3d .msg { position: absolute; inset: 0; display: grid; place-items: center; font: 11px var(--mono); color: var(--ink-dim); text-align: center; line-height: 1.7; padding: 16px; }
-.p-cred { display: flex; justify-content: space-between; align-items: center; gap: 8px; font: 10px var(--mono); color: var(--ink-dim); letter-spacing: .06em; margin: -6px 0 10px; }
-.p-cred a { color: var(--ink-dim); }
+.p-cred { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 12px; font: 10px/1.7 var(--mono); color: var(--ink-dim); letter-spacing: .06em; margin: 0 0 12px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+.p-cred .who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.p-cred .lic { grid-column: 1; }
+.p-cred a { color: var(--ink); text-decoration: none; border-bottom: 1px dotted var(--ink-dim); }
+.p-cred button { grid-column: 2; grid-row: 1 / span 2; }
 .p-cred button { font: 10px var(--mono); color: var(--glow); letter-spacing: .1em; text-transform: uppercase; border: 1px solid var(--line-soft); padding: 3px 8px; white-space: nowrap; }
 
 /* ---------- timeline ---------- */
@@ -171,7 +179,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .card .yr span { display: block; }
 .card .yr .rel { opacity: .7; margin-top: 4px; }
 .card .body { position: relative; padding-left: 16px; }
-.card .body::before { content: ""; position: absolute; left: -4px; top: 14px; width: 7px; height: 7px; border-radius: 50%; background: var(--bg); border: 1px solid var(--line); transition: background .3s, box-shadow .3s; }
+.card .body::before { content: ""; position: absolute; left: -5.5px; top: 14px; width: 7px; height: 7px; border-radius: 50%; background: var(--bg); border: 1px solid var(--line); transition: background .3s, box-shadow .3s; }
 .card .head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; width: 100%; text-align: left; padding: 8px 10px; }
 .card .t { font: 13px/1.35 var(--display); letter-spacing: .02em; }
 .card .meta { font: 10px var(--mono); color: var(--ink-dim); letter-spacing: .12em; text-transform: uppercase; }
@@ -212,10 +220,10 @@ svg.dim .bubble:not(.sel):not(.rel) { opacity: .28; }
 .ring-orbit { fill: none; stroke: var(--line-soft); stroke-width: .5; }
 .hud { fill: none; stroke: var(--line); stroke-width: .8; opacity: .6; pointer-events: none; }
 .hud-text { fill: var(--ink-dim); font: 9px var(--mono); letter-spacing: .16em; text-transform: uppercase; pointer-events: none; }
-.legend { position: absolute; left: 16px; bottom: 14px; display: flex; gap: 14px; flex-wrap: wrap; font: 10px var(--mono); color: var(--ink); letter-spacing: .12em; text-transform: uppercase; pointer-events: none;
+.legend { position: absolute; left: 16px; bottom: 34px; display: flex; gap: 14px; flex-wrap: wrap; font: 10px var(--mono); color: var(--ink); letter-spacing: .12em; text-transform: uppercase; pointer-events: none;
   padding: 7px 10px; background: rgba(2,3,10,.88); border: 1px solid var(--line-soft); border-left: 2px solid var(--line); }
 .legend i { display: inline-block; width: 10px; height: 10px; border: 1px solid; margin-right: 6px; vertical-align: -1px; }
-.zoomctl { position: absolute; right: 14px; bottom: 14px; display: flex; flex-direction: column; gap: 4px; }
+.zoomctl { position: absolute; right: 14px; bottom: 34px; display: flex; flex-direction: column; gap: 4px; }
 .zoomctl button { width: 30px; height: 30px; font: 14px var(--mono); color: var(--ink); border: 1px solid var(--line-soft); background: rgba(2,3,10,.88); }
 .zoomctl button:hover { border-color: var(--glow); }
 
@@ -235,9 +243,13 @@ svg.dim .bubble:not(.sel):not(.rel) { opacity: .28; }
 
 @media (prefers-reduced-motion: reduce) { .card, .tcard, .bubble circle, .bubble text { transition: none !important; } }
 
-@media (max-width: 1100px) { .brand .sub { display: none; } .readout { display: none; } }
+@media (max-width: 1100px) { .brand .sub { display: none; } }
+@media (max-width: 700px) { #status .right { display: none; } }
 @media (max-width: 900px) {
-  :root { --bar-h: 128px; --panel-w: 0px; }
+  :root { --bar-h: 148px; --panel-w: 0px; }
+  .tabs { justify-content: flex-start; }
+  .tab { font-size: 11px; padding: 9px 12px; }
+  .tab[aria-selected="true"] { padding-left: 18px; }
   .row2 { gap: 6px; }
   .count { display: none; }
   #stage { right: 0; }
@@ -249,8 +261,9 @@ svg.dim .bubble:not(.sel):not(.rel) { opacity: .28; }
   .era { padding-left: 94px; }
   .era::before { left: 74px; }
   .card { grid-template-columns: 68px 1fr; gap: 10px; }
-  .legend { left: 10px; bottom: 10px; gap: 8px; padding: 5px 8px; }
-  .zoomctl { right: 10px; bottom: 10px; }
+  .legend { left: 10px; bottom: 30px; gap: 8px; padding: 5px 8px; }
+  .zoomctl { right: 10px; bottom: 30px; }
+  #status { right: 0; }
 }
 </style>
 </head>
@@ -274,32 +287,32 @@ svg.dim .bubble:not(.sel):not(.rel) { opacity: .28; }
       <h1>Star Wars Explorer</h1>
       <span class="sub">Galactic archive readout · data from Wookieepedia</span>
     </div>
-    <div class="readout" id="readout"><span><span class="blink">●</span> Link <b>Online</b></span><span id="roClock"></span><span id="roPos">Cursor 0000 · 0000</span></div>
-    <nav class="tabs" role="tablist" aria-label="Views">
-      <button class="tab" role="tab" data-view="timeline" aria-selected="true">Timeline</button>
-      <button class="tab" role="tab" data-view="characters">Characters</button>
-      <button class="tab" role="tab" data-view="planets">Planets</button>
-      <button class="tab" role="tab" data-view="creators">Creators</button>
-      <button class="tab" role="tab" data-view="tech">Tech</button>
-    </nav>
-  </div>
-  <div class="row2">
-    <div class="filters" id="typeFilters" aria-label="Media type">
-      <span class="flabel">Media</span>
-      <button class="chip" data-type="film" aria-pressed="true">Film</button>
-      <button class="chip" data-type="series" aria-pressed="true">Series</button>
-      <button class="chip" data-type="book" aria-pressed="true">Book</button>
-      <button class="chip" data-type="comic" aria-pressed="true">Comic</button>
-      <button class="chip" data-type="game" aria-pressed="true">Game</button>
+    <div class="row2">
+      <div class="filters" id="typeFilters" aria-label="Media type">
+        <span class="flabel">Media</span>
+        <button class="chip" data-type="film" aria-pressed="true">Film</button>
+        <button class="chip" data-type="series" aria-pressed="true">Series</button>
+        <button class="chip" data-type="book" aria-pressed="true">Book</button>
+        <button class="chip" data-type="comic" aria-pressed="true">Comic</button>
+        <button class="chip" data-type="game" aria-pressed="true">Game</button>
+      </div>
+      <span class="sep"></span>
+      <button class="chip warn" id="nonCanon" aria-pressed="true">Show non-canon</button>
+      <span class="sep"></span>
+      <button id="mute" aria-pressed="false">Audio on</button>
+      <span class="count" id="count"></span>
     </div>
-    <span class="sep"></span>
-    <button class="chip warn" id="nonCanon" aria-pressed="true">Show non-canon</button>
-    <span class="sep"></span>
-    <button id="mute" aria-pressed="false">Audio on</button>
-    <span class="count" id="count"></span>
   </div>
+  <nav class="tabs" role="tablist" aria-label="Views">
+    <button class="tab" role="tab" data-view="timeline" aria-selected="true">Timeline</button>
+    <button class="tab" role="tab" data-view="characters">Characters</button>
+    <button class="tab" role="tab" data-view="planets">Planets</button>
+    <button class="tab" role="tab" data-view="creators">Creators</button>
+    <button class="tab" role="tab" data-view="tech">Tech</button>
+  </nav>
 </header>
 
+<div id="status"><div class="readout"><span><span class="blink">●</span> Link <b>Online</b></span><span id="roClock"></span></div><div class="readout right"><span id="roPos">Cursor 0000 · 0000</span><span id="roView"></span></div></div>
 <main id="stage">
   <section class="view on" id="v-timeline" aria-label="Timeline">
     <div class="tl-head">

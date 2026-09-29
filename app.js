@@ -820,10 +820,11 @@
   paintMute();
   muteBtn.addEventListener("click", () => { SWSound.toggleMute(); paintMute(); });
   // HUD readouts: clock and cursor position
-  const roPos = $("#roPos");
+  const roPos = $("#roPos"), roClock = $("#roClock");
+  setInterval(() => { const d = new Date(); roClock.textContent = `GST ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`; }, 1000);
   // Live visit counter (Abacus, an open hit-counter service). One hit per browser session.
   (async function visits() {
-    const out = $("#roVisits"), tab = $("#pVisits");
+    const out = $("#roVisits"), tab = $("#pVisits") || { textContent: "" };
     let seen = false; try { seen = sessionStorage.getItem("sw-visit") === "1"; } catch (e) {}
     try {
       const j = await (await fetch(`https://abacus.jasoncameron.dev/${seen ? "get" : "hit"}/nishitanirmal-sw-explorer/visits`)).json();

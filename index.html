@@ -60,6 +60,9 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   background: linear-gradient(transparent, var(--bg) 40%); border-top: 1px solid var(--line-soft); pointer-events: none; }
 #status .readout { display: flex; gap: 18px; }
 #status .right { margin-left: auto; }
+#status .visits { margin-left: 24px; display: flex; align-items: center; gap: 10px; padding: 2px 10px; border: 1px solid rgba(76,224,160,.45); background: rgba(76,224,160,.08); color: var(--ink); box-shadow: 0 0 14px rgba(76,224,160,.18), inset 0 0 8px rgba(76,224,160,.08); }
+#status .visits .vl { color: var(--green); }
+#status .visits b { font: 12px var(--display); color: var(--green); letter-spacing: .1em; text-shadow: 0 0 8px rgba(76,224,160,.8); font-variant-numeric: tabular-nums; }
 .readout b { color: var(--green); font-weight: 500; }
 .readout .blink { animation: blink 1.6s steps(2) infinite; color: var(--red); }
 @keyframes blink { 50% { opacity: 0; } }
@@ -304,10 +307,10 @@ svg.dim .bubble:not(.sel):not(.rel) { opacity: .28; }
   .p-hlabel::before { content: ""; display: inline-block; width: 5px; height: 5px; background: var(--red); margin-right: 10px; vertical-align: 2px; box-shadow: 0 0 8px var(--red); }
   #panel:not(.open) .p-close { visibility: hidden; }
   /* tiny visits pill in the bottom corner, above the drawer tab */
-  #status { left: auto; right: 8px; bottom: calc(6px + env(safe-area-inset-bottom, 0px)); height: auto; z-index: 6; padding: 3px 8px; gap: 0;
-    background: rgba(2,3,10,.92); border: 1px solid var(--line-soft); border-left: 2px solid var(--red); font-size: 9px; letter-spacing: .1em; }
-  #status .right, #status .blink { display: none; }
-  #status .readout { gap: 0; }
+  #status { left: auto; right: 8px; bottom: calc(6px + env(safe-area-inset-bottom, 0px)); height: auto; z-index: 6; padding: 0; gap: 0; background: none; border: 0; }
+  #status .right, #status .readout { display: none; }
+  #status .visits { margin: 0; padding: 3px 8px; font-size: 9px; background: rgba(2,3,10,.94); }
+  #status .visits b { font-size: 10px; }
   #pVisits { display: none; }
   #v-timeline, #v-tech { padding-bottom: 120px; }
   #v-timeline, #v-tech { padding-left: 16px; padding-right: 16px; }
@@ -375,7 +378,7 @@ svg.dim .bubble:not(.sel):not(.rel) { opacity: .28; }
   </div>
 </header>
 
-<div id="status"><div class="readout"><span><span class="blink">●</span> Visits <b id="roVisits">------</b></span></div><div class="readout right"><span id="roPos">Cursor 0000 · 0000</span><span id="roView"></span></div></div>
+<div id="status"><div class="readout"><span><span class="blink">●</span> Link <b>Online</b></span><span id="roClock"></span></div><div class="visits" title="Every visit to the Explorer so far"><span class="vl">Travellers logged</span><b id="roVisits">------</b></div><div class="readout right"><span id="roPos">Cursor 0000 · 0000</span><span id="roView"></span></div></div>
 <main id="stage">
   <section class="view on" id="v-timeline" aria-label="Timeline">
     <div class="tl-head">
@@ -407,11 +410,11 @@ svg.dim .bubble:not(.sel):not(.rel) { opacity: .28; }
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="data.js?v=202609300419"></script>
-<script src="arcs.js?v=202609300419"></script>
-<script src="sites.js?v=202609300419"></script>
-<script src="models.js?v=202609300419"></script>
-<script src="sound.js?v=202609300419"></script>
-<script src="app.js?v=202609300419"></script>
+<script src="data.js?v=202609300421"></script>
+<script src="arcs.js?v=202609300421"></script>
+<script src="sites.js?v=202609300421"></script>
+<script src="models.js?v=202609300421"></script>
+<script src="sound.js?v=202609300421"></script>
+<script src="app.js?v=202609300421"></script>
 </body>
 </html>

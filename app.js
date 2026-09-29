@@ -416,23 +416,13 @@
     layout(W, H) {
       const chars = D.characters.filter((c) => (IX.charMedia[c.id] || []).length);
       const factions = [...new Set(chars.map((c) => c.faction))];
-      const total = chars.reduce((s, c) => s + Math.sqrt(IX.charMedia[c.id].length), 0);
-      // scale so the packed area of all bubbles uses about 20% of the stage
-      const sumSq = chars.reduce((s, c) => s + IX.charMedia[c.id].length, 0);
-      const unit = Math.sqrt((W * H * 0.2) / (Math.PI * Math.max(1, sumSq)));
-      const rOf = (c) => Math.max(5, Math.min(42, Math.sqrt(IX.charMedia[c.id].length) * unit));
-      const cols = Math.max(1, Math.round(Math.sqrt(factions.length * (W / H))));
-      const rows = Math.ceil(factions.length / cols);
-      const centers = {};
-      factions.forEach((f, i) => { centers[f] = { x: ((i % cols) + 0.5) * (W / cols), y: (Math.floor(i / cols) + 0.5) * (H / rows) }; });
-      const nodes = chars.map((c) => ({ id: c.id, name: c.name, cluster: c.faction, r: rOf(c), x: centers[c.faction].x + (Math.random() - .5) * 40, y: centers[c.faction].y + (Math.random() - .5) * 40 }));
-      const sim = d3.forceSimulation(nodes)
-        .force("x", d3.forceX((d) => centers[d.cluster].x).strength(0.14))
-        .force("y", d3.forceY((d) => centers[d.cluster].y).strength(0.14))
-        .force("c", d3.forceCollide((d) => d.r + 2).iterations(3))
-        .stop();
-      for (let i = 0; i < 260; i++) sim.tick();
-      nodes.clusters = factions.map((f) => { const ns = nodes.filter((n) => n.cluster === f); const cx = d3.mean(ns, (n) => n.x), cy = d3.mean(ns, (n) => n.y); const rr = d3.max(ns, (n) => Math.hypot(n.x - cx, n.y - cy) + n.r) + 10; return { key: f, x: cx, y: cy, r: rr }; });
+      // nested packing: faction circles packed into the stage, characters packed inside each
+      const root = d3.hierarchy({ children: factions.map((f) => ({ key: f, children: chars.filter((c) => c.faction === f).map((c) => ({ id: c.id, name: c.name, v: IX.charMedia[c.id].length })) })) })
+        .sum((d) => d.v || 0);
+      const top = 40, bottom = 36, side = 16;
+      d3.pack().size([W - side * 2, H - top - bottom]).padding((d) => (d.depth === 0 ? 34 : 3))(root);
+      const nodes = root.leaves().map((l) => ({ id: l.data.id, name: l.data.name, cluster: l.parent.data.key, x: l.x + side, y: l.y + top, r: l.r }));
+      nodes.clusters = root.children.map((c) => ({ key: c.data.key, x: c.x + side, y: c.y + top, r: c.r + 4 }));
       return nodes;
     },
     draw(g, nodes) {

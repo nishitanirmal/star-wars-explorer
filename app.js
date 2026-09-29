@@ -747,7 +747,7 @@
       const b = g.selectAll(".bubble").data(nodes).join("g").attr("class", "bubble").attr("transform", (d) => `translate(${d.x},${d.y})`);
       b.append("circle").attr("class", "ring").attr("r", (d) => d.r + 3);
       b.append("circle").attr("class", "core").attr("r", 0).transition().duration(reduced ? 0 : 700).delay((d, i) => i * 5).ease(d3.easeBackOut).attr("r", (d) => d.r);
-      nodes.forEach((d) => (d.label = d.name.split(" ").slice(-1)[0]));
+      nodes.forEach((d) => (d.label = d.name.replace(/\s*\(.*\)/, "").split(" ").filter((w) => !/^(II|III|IV|Jr\.?|Sr\.?)$/.test(w)).slice(-1)[0]));
       b.append("text").attr("class", "lbl").attr("dy", "0.35em").text((d) => d.label);
       b.append("title").text((d) => `${d.name} · ${IX.creatorMedia[d.id].length} works`);
     },

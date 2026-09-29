@@ -580,7 +580,22 @@
   function makeChart(svgSel, opts) {
     const svg = d3.select(svgSel);
     let g, nodes = [], sel = null, W = 0, H = 0;
-    const zoom = d3.zoom().scaleExtent([1, 9]).clickDistance(16).on("zoom", (e) => { if (g) g.attr("transform", e.transform); });
+    let k = 1, raf = 0;
+    const zoom = d3.zoom().scaleExtent([1, 9]).clickDistance(16).on("zoom", (e) => { if (!g) return; g.attr("transform", e.transform); k = e.transform.k; if (!raf) raf = requestAnimationFrame(() => { raf = 0; relabel(); }); });
+    // Labels are judged by on-screen size: radius times zoom. The selected bubble always gets its name.
+    function relabel() {
+      if (!g) return;
+      const topR = [...nodes].sort((a, b) => b.r - a.r).slice(0, 8).map((n) => n.id); // the biggest always carry a name
+      g.selectAll(".bubble").each(function (d) {
+        const t = d3.select(this).select("text.lbl"); if (t.empty()) return;
+        const R = d.r * k, fsS = R > 40 ? 12 : R > 22 ? 11 : 10;        // font size on screen
+        const fits = d.label.length * fsS * 0.62 < R * 2 - 6;
+        const selected = d.id === sel, highlighted = this.classList.contains("rel");
+        const show = selected || highlighted || topR.includes(d.id) || (R >= 9 && fits) || (R >= 30);
+        t.style("font-size", fsS / k + "px").style("display", show ? null : "none").classed("out", !fits);
+        if (opts.below || !fits) t.attr("dy", (d.r + 12 / k)).attr("y", 0); else t.attr("dy", "0.35em").attr("y", 0);
+      });
+    }
     function size() { const r = svg.node().getBoundingClientRect(); W = r.width || 800; H = r.height || 600; svg.attr("viewBox", `0 0 ${W} ${H}`); zoom.translateExtent([[0, 0], [W, H]]).extent([[0, 0], [W, H]]); }
     const section = svg.node().closest(".view");
     section.querySelectorAll("[data-zoom]").forEach((b) => b.addEventListener("click", () => {
@@ -604,6 +619,7 @@
       svg.call(zoom.transform, d3.zoomIdentity);
       nodes = opts.layout(W, H);
       opts.draw(g, nodes, W, H);
+      relabel();
       g.selectAll(".bubble").on("click", (e, d) => {
         e.stopPropagation();
         if (sel === d.id) return clearSel();
@@ -620,6 +636,7 @@
         all.classed("sel rel ant fam home", false);
         svg.classed("dim", false);
         g.selectAll(".clabel").classed("sel", false);
+        relabel();
         svg.transition().duration(instant || reduced ? 0 : 900).ease(d3.easeCubicInOut).call(zoom.transform, d3.zoomIdentity);
         return;
       }
@@ -634,11 +651,12 @@
         .classed("home", (d) => has(d, "home"));
       g.selectAll(".clabel").classed("sel", (d) => d && d.key === n.cluster);
       svg.classed("dim", true);
-      const k = Math.min(3.2, Math.max(1.6, 120 / (n.r + 6)));
-      const tx = W / 2 - n.x * k, ty = H / 2 - n.y * k;
+      relabel();
+      const kk = Math.min(3.2, Math.max(1.6, 120 / (n.r + 6)));
+      const tx = W / 2 - n.x * kk, ty = H / 2 - n.y * kk;
       // d3's zoom interpolator pulls out then dives in, which reads as travel
       svg.transition().duration(instant || reduced ? 0 : 1100).ease(d3.easeCubicInOut)
-        .call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(k));
+        .call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(kk));
     }
     return { render, focus };
   }
@@ -674,7 +692,8 @@
       const b = g.selectAll(".bubble").data(nodes).join("g").attr("class", "bubble").attr("transform", (d) => `translate(${d.x},${d.y})`);
       b.append("circle").attr("class", "ring").attr("r", (d) => d.r + 3);
       b.append("circle").attr("class", "core").attr("r", 0).transition().duration(reduced ? 0 : 700).delay((d, i) => i * 4).ease(d3.easeBackOut).attr("r", (d) => d.r);
-      b.append("text").attr("dy", "0.35em").style("font-size", (d) => Math.min(11, d.r / 2.6) + "px").text((d) => { const n = shortName(d.name); const fs = Math.min(11, d.r / 2.6); return d.r > 16 && n.length * fs * 0.62 < d.r * 2 ? n : ""; });
+      nodes.forEach((d) => (d.label = shortName(d.name)));
+      b.append("text").attr("class", "lbl").attr("dy", "0.35em").text((d) => d.label);
       b.append("title").text((d) => `${d.name} · ${IX.charMedia[d.id].length} appearances`);
     },
     related(id) {
@@ -690,7 +709,7 @@
   function shortName(n) { return n.split(" / ")[0].split(" (")[0]; }
 
   charts.planets = makeChart("#svgPlanets", {
-    kind: "planet",
+    kind: "planet", below: true,
     layout(W, H) {
       const ps = D.planets.filter((p) => (IX.planetMedia[p.id] || []).length);
       const root = d3.hierarchy({ children: ps.map((p) => ({ id: p.id, name: p.name, v: IX.planetMedia[p.id].length })) }).sum((d) => d.v);
@@ -704,7 +723,8 @@
       for (const k of [0.33, 0.66]) b.append("ellipse").attr("class", "lat").attr("rx", (d) => d.r * Math.sqrt(1 - k * k)).attr("ry", (d) => d.r * Math.sqrt(1 - k * k) * 0.28).attr("cy", (d) => -d.r * k);
       for (const k of [-0.33, -0.66]) b.append("ellipse").attr("class", "lat").attr("rx", (d) => d.r * Math.sqrt(1 - k * k)).attr("ry", (d) => d.r * Math.sqrt(1 - k * k) * 0.28).attr("cy", (d) => -d.r * k);
       b.append("ellipse").attr("class", "lat").attr("rx", (d) => d.r * 0.35).attr("ry", (d) => d.r);
-      b.append("text").attr("dy", (d) => d.r + 11).text((d) => d.r > 20 ? d.name : "").style("font-size", (d) => Math.min(11, 6 + d.r / 6) + "px");
+      nodes.forEach((d) => (d.label = d.name));
+      b.append("text").attr("class", "lbl").text((d) => d.label);
       b.append("title").text((d) => `${d.name} · ${IX.planetMedia[d.id].length} appearances`);
     },
     related(id) {
@@ -727,7 +747,8 @@
       const b = g.selectAll(".bubble").data(nodes).join("g").attr("class", "bubble").attr("transform", (d) => `translate(${d.x},${d.y})`);
       b.append("circle").attr("class", "ring").attr("r", (d) => d.r + 3);
       b.append("circle").attr("class", "core").attr("r", 0).transition().duration(reduced ? 0 : 700).delay((d, i) => i * 5).ease(d3.easeBackOut).attr("r", (d) => d.r);
-      b.append("text").attr("dy", "0.35em").text((d) => d.r > 18 ? d.name.split(" ").slice(-1)[0] : "").style("font-size", (d) => Math.min(11, d.r / 3) + "px");
+      nodes.forEach((d) => (d.label = d.name.split(" ").slice(-1)[0]));
+      b.append("text").attr("class", "lbl").attr("dy", "0.35em").text((d) => d.label);
       b.append("title").text((d) => `${d.name} · ${IX.creatorMedia[d.id].length} works`);
     },
     related(id) {

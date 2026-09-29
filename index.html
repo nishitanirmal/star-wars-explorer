@@ -303,8 +303,6 @@ svg.dim .bubble:not(.sel):not(.rel) { opacity: .28; }
   .p-hlabel::before { content: ""; display: inline-block; width: 5px; height: 5px; background: var(--red); margin-right: 10px; vertical-align: 2px; box-shadow: 0 0 8px var(--red); }
   #panel:not(.open) .p-close { visibility: hidden; }
   #status { display: none; }
-  .legend { bottom: 56px; }
-  .zoomctl { bottom: 56px; }
   #v-timeline, #v-tech { padding-bottom: 120px; }
   #v-timeline, #v-tech { padding-left: 16px; padding-right: 16px; }
   .tl-head { margin-left: -16px; margin-right: -16px; padding-left: 16px; padding-right: 16px; }
@@ -312,8 +310,12 @@ svg.dim .bubble:not(.sel):not(.rel) { opacity: .28; }
   .era { padding-left: 94px; }
   .era::before { left: 74px; }
   .card { grid-template-columns: 68px 1fr; gap: 10px; transform-origin: 78px 50%; }
-  .legend { left: 10px; bottom: 30px; gap: 8px; padding: 5px 8px; }
-  .zoomctl { right: 10px; bottom: 30px; }
+  /* legend and zoom buttons ride above the drawer tab, and step aside when it opens */
+  .legend { position: fixed; left: 10px; bottom: calc(46px + 10px + env(safe-area-inset-bottom, 0px)); z-index: 5; gap: 8px; padding: 5px 8px; transition: opacity .3s; }
+  .zoomctl { position: fixed; right: 10px; bottom: calc(46px + 10px + env(safe-area-inset-bottom, 0px)); z-index: 5; transition: opacity .3s; }
+  .view:not(.on) .legend, .view:not(.on) .zoomctl { display: none; }
+  body.drawer-open .legend, body.drawer-open .zoomctl { opacity: 0; pointer-events: none; }
+  #panel { padding-bottom: env(safe-area-inset-bottom, 0px); }
   #status { right: 0; }
 }
 </style>
@@ -399,11 +401,11 @@ svg.dim .bubble:not(.sel):not(.rel) { opacity: .28; }
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="data.js?v=202609300411"></script>
-<script src="arcs.js?v=202609300411"></script>
-<script src="sites.js?v=202609300411"></script>
-<script src="models.js?v=202609300411"></script>
-<script src="sound.js?v=202609300411"></script>
-<script src="app.js?v=202609300411"></script>
+<script src="data.js?v=202609300415"></script>
+<script src="arcs.js?v=202609300415"></script>
+<script src="sites.js?v=202609300415"></script>
+<script src="models.js?v=202609300415"></script>
+<script src="sound.js?v=202609300415"></script>
+<script src="app.js?v=202609300415"></script>
 </body>
 </html>

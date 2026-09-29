@@ -413,6 +413,7 @@
     }
   });
   $("#pClose").addEventListener("click", (e) => { e.stopPropagation(); panel.classList.remove("open"); });
+  new MutationObserver(() => document.body.classList.toggle("drawer-open", panel.classList.contains("open"))).observe(panel, { attributes: true, attributeFilter: ["class"] });
   // Phone drawer: drag the grip either way, swipe down on the content to close,
   // swipe up on the bottom tab to open, tap the tab to toggle.
   (function drawer() {

@@ -185,6 +185,7 @@
       ${p.blurb ? `<p class="p-text">${esc(p.blurb)}</p>` : ""}
       ${window.SW_GEO && SW_GEO[p.id] ? `<div class="p-sec"><div class="p-h"><span>Geography</span></div><p class="p-text">${esc(SW_GEO[p.id])}</p></div>` : ""}
       ${(VISUALS["p:" + p.id] = { id: "p:" + p.id, name: p.name, wiki: p.name.replace(/ /g, "_"), sfq: "star wars planet " + p.name }, visualBlock("p:" + p.id))}
+      ${sitesBlock(p)}
       <div class="stat"><div><div class="k">Appearances</div><div class="v">${ms.length}</div></div><div><div class="k">Natives</div><div class="v">${nat.length}</div></div></div>
       ${sec("Key events", ev.length, ev.map((e) => `<div class="evt">${esc(e.text)} <button data-kind="media" data-id="${e.media}">${esc(MD[e.media].title)} →</button></div>`).join(""))}
       ${sec("Native characters", nat.length, charLinks(nat.map((c) => c.id)))}
@@ -222,13 +223,13 @@
       ${sec("Appears in", ms.length, mediaLinks(ms))}
     `);
     disposeModel = SWModels.mount($("#pModel"), t.model);
+    load3d(t, 0, $("#p3d"), $("#p3dCred")); // preload hidden so the 3D tab is instant
+    loadReal(t, $("#pReal"));
     $$(".p-switch .chip").forEach((b) => b.addEventListener("click", () => {
       $$(".p-switch .chip").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
       const mode = b.dataset.mode;
       $("#pModel").hidden = mode !== "holo"; $("#pReal").hidden = mode !== "real";
       $("#p3d").hidden = mode !== "3d"; $("#p3dCred").hidden = mode !== "3d";
-      if (mode === "real") loadReal(t);
-      if (mode === "3d") load3d(t);
     }));
   }
   // Community 3D models from Sketchfab, searched live and shown in Sketchfab's own viewer.
@@ -251,6 +252,8 @@
     c.i = (c.i + step + c.list.length) % c.list.length;
     const m = c.list[c.i];
     if (!box.isConnected) return;
+    if (box.dataset.uid === m.uid) return;
+    box.dataset.uid = m.uid;
     box.innerHTML = `<iframe title="${esc(m.name)}" src="https://sketchfab.com/models/${m.uid}/embed?autostart=1&ui_theme=dark&ui_infos=0&ui_watermark=0&ui_hint=0&transparent=1&preload=1" allow="autoplay; fullscreen; xr-spatial-tracking" allowfullscreen></iframe>`;
     const lic = m.license && (m.license.label || m.license);
     cred.innerHTML = `<span class="who"><a href="${m.viewerUrl || ("https://sketchfab.com/3d-models/" + m.uid)}" target="_blank" rel="noopener">${esc(m.name)}</a> by ${esc(m.user ? m.user.displayName || m.user.username : "unknown")}</span><span class="lic">${lic ? esc(lic) + " · " : ""}Sketchfab · ${c.i + 1} of ${c.list.length}</span><button class="sfNext">Next model</button>`;
@@ -293,7 +296,41 @@
   function visualBlock(key) {
     return `<div class="p-visual" data-vkey="${key}"><div class="p-real none"><div class="msg">Requesting archive image…</div></div></div>`;
   }
-  function loadVisuals() { $$(".p-visual", panelBody).forEach((w) => loadReal(VISUALS[w.dataset.vkey], $(".p-real", w))); }
+  function sitesBlock(p) {
+    const sites = (window.SW_SITES && SW_SITES[p.id]) || [];
+    if (!sites.length) return "";
+    sites.forEach((st, i) => { VISUALS[`s:${p.id}:${i}`] = { id: `s:${p.id}:${i}`, name: st.name, wiki: st.wiki, sfq: st.sfq }; });
+    return `<div class="p-sec" id="sites" data-planet="${p.id}"><div class="p-h"><span>Sites</span><b>${sites.length}</b></div>
+      <div class="sites">${sites.map((st, i) => `<button class="chip" data-site="${i}" aria-pressed="${i === 0}">${esc(st.name)}</button>`).join("")}</div>
+      <div class="p-switch" role="tablist"><button class="chip" data-smode="real" aria-pressed="true">Still</button><button class="chip" data-smode="3d" aria-pressed="false">3D model</button></div>
+      <div class="p-real none" id="siteReal"><div class="msg">Requesting archive image…</div></div>
+      <div class="p-3d" id="site3d" hidden></div><div class="p-cred" id="site3dCred" hidden></div></div>`;
+  }
+  function loadSite(pid, i) {
+    const spec = VISUALS[`s:${pid}:${i}`];
+    const real = $("#siteReal"), box = $("#site3d"), cred = $("#site3dCred");
+    if (!spec || !real) return;
+    delete box.dataset.uid;
+    loadReal(spec, real);
+    load3d(spec, 0, box, cred);
+  }
+  panelBody.addEventListener("click", (e) => {
+    const sc = e.target.closest("[data-site]");
+    if (sc) {
+      const wrap = sc.closest("#sites");
+      $$("[data-site]", wrap).forEach((x) => x.setAttribute("aria-pressed", String(x === sc)));
+      loadSite(wrap.dataset.planet, +sc.dataset.site);
+      return;
+    }
+    const sm = e.target.closest("[data-smode]");
+    if (sm) {
+      $$("[data-smode]").forEach((x) => x.setAttribute("aria-pressed", String(x === sm)));
+      const m = sm.dataset.smode;
+      $("#siteReal").hidden = m !== "real"; $("#site3d").hidden = m !== "3d"; $("#site3dCred").hidden = m !== "3d";
+    }
+  });
+  function loadVisuals() {
+    const sw = $("#sites", panelBody); if (sw) loadSite(sw.dataset.planet, 0); $$(".p-visual", panelBody).forEach((w) => loadReal(VISUALS[w.dataset.vkey], $(".p-real", w))); }
   const VISUALS = {};
   panelBody.addEventListener("click", (e) => {
     const b = e.target.closest("[data-kind]");
@@ -439,7 +476,7 @@
   function makeChart(svgSel, opts) {
     const svg = d3.select(svgSel);
     let g, nodes = [], sel = null, W = 0, H = 0;
-    const zoom = d3.zoom().scaleExtent([1, 9]).clickDistance(5).on("zoom", (e) => { if (g) g.attr("transform", e.transform); });
+    const zoom = d3.zoom().scaleExtent([1, 9]).clickDistance(16).on("zoom", (e) => { if (g) g.attr("transform", e.transform); });
     function size() { const r = svg.node().getBoundingClientRect(); W = r.width || 800; H = r.height || 600; svg.attr("viewBox", `0 0 ${W} ${H}`); zoom.translateExtent([[0, 0], [W, H]]).extent([[0, 0], [W, H]]); }
     const section = svg.node().closest(".view");
     section.querySelectorAll("[data-zoom]").forEach((b) => b.addEventListener("click", () => {
@@ -532,7 +569,7 @@
       const b = g.selectAll(".bubble").data(nodes).join("g").attr("class", "bubble").attr("transform", (d) => `translate(${d.x},${d.y})`);
       b.append("circle").attr("class", "ring").attr("r", (d) => d.r + 3);
       b.append("circle").attr("class", "core").attr("r", 0).transition().duration(reduced ? 0 : 700).delay((d, i) => i * 4).ease(d3.easeBackOut).attr("r", (d) => d.r);
-      b.append("text").attr("dy", "0.35em").text((d) => d.r > 16 ? shortName(d.name) : "").style("font-size", (d) => Math.min(11, d.r / 2.6) + "px");
+      b.append("text").attr("dy", "0.35em").style("font-size", (d) => Math.min(11, d.r / 2.6) + "px").text((d) => { const n = shortName(d.name); const fs = Math.min(11, d.r / 2.6); return d.r > 16 && n.length * fs * 0.62 < d.r * 2 ? n : ""; });
       b.append("title").text((d) => `${d.name} · ${IX.charMedia[d.id].length} appearances`);
     },
     related(id) {

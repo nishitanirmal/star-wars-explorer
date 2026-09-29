@@ -144,14 +144,16 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .p-model .tag { position: absolute; right: 8px; top: 6px; font: 10px var(--mono); color: var(--glow); letter-spacing: .14em; text-transform: uppercase; pointer-events: none; }
 .p-switch { display: flex; gap: 2px; margin-top: 12px; }
 .p-visual { margin-top: 14px; }
+.sites { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+.sites .chip[aria-pressed="true"] { color: var(--ink); }
 .p-visual .p-switch { margin-top: 0; }
 .p-visual .p-3d, .p-visual .p-real { margin-top: 8px; }
 .p-switch .chip { flex: 1; text-align: center; }
-.p-real { width: 100%; aspect-ratio: 1 / .8; border: 1px solid var(--line-soft); margin: 12px 0; position: relative; background: rgba(2,3,10,.6); display: grid; place-items: center; overflow: hidden; }
-.p-real.none { aspect-ratio: auto; padding: 14px; }
-.p-real img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
-.p-real .cred { position: absolute; left: 0; right: 0; bottom: 0; font: 10px var(--mono); color: var(--ink-dim); letter-spacing: .08em; padding: 5px 8px; background: rgba(2,3,10,.8); }
-.p-real .cred a { color: var(--ink-dim); }
+.p-real { width: 100%; border: 1px solid var(--line-soft); margin: 12px 0; background: rgba(2,3,10,.6); overflow: hidden; }
+.p-real.none { padding: 12px 14px; }
+.p-real img { display: block; width: 100%; height: auto; max-height: 420px; object-fit: contain; background: #000; }
+.p-real .cred { font: 10px/1.6 var(--mono); color: var(--ink-dim); letter-spacing: .08em; padding: 6px 10px; border-top: 1px solid var(--line-soft); }
+.p-real .cred a { color: var(--ink); text-decoration: none; border-bottom: 1px dotted var(--ink-dim); }
 .p-real .msg { font: 11px var(--mono); color: var(--ink-dim); padding: 16px; text-align: center; line-height: 1.7; }
 .p-3d { width: 100%; aspect-ratio: 1 / .9; border: 1px solid var(--line-soft); margin: 12px 0; position: relative; background: #000; }
 .p-3d iframe { width: 100%; height: 100%; border: 0; display: block; }
@@ -208,6 +210,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .bubble.rel.fam circle.core { stroke: var(--green); fill: rgba(76,224,160,.14); }
 .bubble.rel.ant circle.core { stroke: var(--amber); fill: rgba(255,181,71,.12); }
 svg.grab { cursor: grab; } svg.grab:active { cursor: grabbing; }
+svg.grab .bubble, svg.grab .bubble * { cursor: pointer; }
 svg.dim .bubble:not(.sel):not(.rel) { opacity: .28; }
 .clabel { fill: var(--ink-dim); font: 10px var(--mono); letter-spacing: .2em; text-transform: uppercase; text-anchor: middle; pointer-events: none; }
 .clabel.sel { fill: var(--glow); }
@@ -346,6 +349,7 @@ svg.dim .bubble:not(.sel):not(.rel) { opacity: .28; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="data.js"></script>
 <script src="arcs.js"></script>
+<script src="sites.js"></script>
 <script src="models.js"></script>
 <script src="sound.js"></script>
 <script src="app.js"></script>

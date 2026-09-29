@@ -181,7 +181,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .era::before { content: ""; position: absolute; left: 104px; top: 18px; width: 9px; height: 9px; border: 1px solid var(--line); transform: rotate(45deg); background: var(--bg); }
 .card { display: grid; grid-template-columns: 92px 1fr; gap: 16px; align-items: start; padding: 10px 14px 10px 0; position: relative;
   border: 1px solid transparent; transition: transform .55s cubic-bezier(.2,.8,.2,1), opacity .55s, filter .55s, border-color .3s, background .3s;
-  transform-origin: 50% 50%; }
+  transform-origin: 108px 50%; }  /* scale about the timeline so the dots never leave it */
 .card .yr { font: 12px var(--mono); color: var(--ink-dim); text-align: right; padding-top: 10px; font-variant-numeric: tabular-nums; line-height: 1.4; }
 .card .yr b { display: block; color: var(--ink); font-weight: 500; }
 .card .yr span { display: block; }
@@ -271,7 +271,7 @@ svg.dim .bubble:not(.sel):not(.rel) { opacity: .28; }
   .tl-list::before { left: 78px; }
   .era { padding-left: 94px; }
   .era::before { left: 74px; }
-  .card { grid-template-columns: 68px 1fr; gap: 10px; }
+  .card { grid-template-columns: 68px 1fr; gap: 10px; transform-origin: 78px 50%; }
   .legend { left: 10px; bottom: 30px; gap: 8px; padding: 5px 8px; }
   .zoomctl { right: 10px; bottom: 30px; }
   #status { right: 0; }

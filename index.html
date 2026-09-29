@@ -154,6 +154,12 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .p-real img { display: block; width: 100%; height: auto; max-height: 420px; object-fit: contain; background: #000; }
 .p-real .cred { font: 10px/1.6 var(--mono); color: var(--ink-dim); letter-spacing: .08em; padding: 6px 10px; border-top: 1px solid var(--line-soft); }
 .p-real .cred a { color: var(--ink); text-decoration: none; border-bottom: 1px dotted var(--ink-dim); }
+.gal { display: flex; gap: 4px; overflow-x: auto; padding: 6px; border-top: 1px solid var(--line-soft); scrollbar-width: thin; }
+.gal:empty { display: none; }
+.gal button { flex: 0 0 auto; width: 64px; height: 44px; padding: 0; border: 1px solid var(--line-soft); background: #000; opacity: .7; }
+.gal button img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gal button:hover, .gal button[aria-pressed="true"] { opacity: 1; border-color: var(--glow); }
+.gal-n { font: 9px var(--mono); color: var(--ink-dim); letter-spacing: .12em; text-transform: uppercase; padding: 4px 10px 0; }
 .p-real .msg { font: 11px var(--mono); color: var(--ink-dim); padding: 16px; text-align: center; line-height: 1.7; }
 .p-3d { width: 100%; aspect-ratio: 1 / .9; border: 1px solid var(--line-soft); margin: 12px 0; position: relative; background: #000; }
 .p-3d iframe { width: 100%; height: 100%; border: 0; display: block; }
@@ -209,6 +215,8 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .bubble.rel circle.core { stroke: var(--glow); stroke-width: 1.4; fill: rgba(111,150,255,.22); }
 .bubble.rel.fam circle.core { stroke: var(--green); fill: rgba(76,224,160,.14); }
 .bubble.rel.ant circle.core { stroke: var(--amber); fill: rgba(255,181,71,.12); }
+.bubble.rel.fam.ant circle.core { stroke: var(--amber); fill: rgba(76,224,160,.14); }
+.bubble.rel.fam.ant circle.ring { stroke: var(--green); }
 svg.grab { cursor: grab; } svg.grab:active { cursor: grabbing; }
 svg.grab .bubble, svg.grab .bubble * { cursor: pointer; }
 svg.dim .bubble:not(.sel):not(.rel) { opacity: .28; }

@@ -184,7 +184,7 @@
       <div class="p-sub">${wiki(p.name.replace(/ /g, "_"))}</div>
       ${p.blurb ? `<p class="p-text">${esc(p.blurb)}</p>` : ""}
       ${window.SW_GEO && SW_GEO[p.id] ? `<div class="p-sec"><div class="p-h"><span>Geography</span></div><p class="p-text">${esc(SW_GEO[p.id])}</p></div>` : ""}
-      ${(VISUALS["p:" + p.id] = { id: "p:" + p.id, name: p.name, wiki: p.name.replace(/ /g, "_"), sfq: "star wars planet " + p.name }, visualBlock("p:" + p.id))}
+      ${(VISUALS["p:" + p.id] = { id: "p:" + p.id, name: p.name, wiki: p.name.replace(/ /g, "_"), sfq: "star wars planet " + p.name, gallery: true }, visualBlock("p:" + p.id))}
       ${sitesBlock(p)}
       <div class="stat"><div><div class="k">Appearances</div><div class="v">${ms.length}</div></div><div><div class="k">Natives</div><div class="v">${nat.length}</div></div></div>
       ${sec("Key events", ev.length, ev.map((e) => `<div class="evt">${esc(e.text)} <button data-kind="media" data-id="${e.media}">${esc(MD[e.media].title)} →</button></div>`).join(""))}
@@ -275,21 +275,69 @@
     } catch (e) {}
     return null;
   }
+  const galCache = {};
+  const BAD = /logo|icon|favicon|template|premium|era|canon|legends|databank|encyclopedia|insider|lego|hasbro|toys|button|arrow|title|badge|banner|cover|wiki|custom|smaller|print|collection|dplus|mini|symbol|emblem|map|infobox|poster|card|sticker|funko|figure|comic/i;
+  async function fetchGallery(t) {
+    if (galCache[t.id]) return galCache[t.id];
+    const title = decodeURIComponent(t.wiki);
+    const out = []; let cont = null;
+    try {
+      for (let page = 0; page < 4; page++) {
+        const url = `https://starwars.fandom.com/api.php?action=query&format=json&origin=*&redirects=1&generator=images&titles=${encodeURIComponent(title)}&gimlimit=50&prop=imageinfo&iiprop=url|size|mime&iiurlwidth=900${cont ? "&gimcontinue=" + encodeURIComponent(cont) : ""}`;
+        const j = await (await fetch(url)).json();
+        for (const pg of Object.values((j.query && j.query.pages) || {})) {
+          const ii = pg.imageinfo && pg.imageinfo[0]; if (!ii) continue;
+          const name = pg.title.replace(/^File:/, "");
+          if (!/image\/(jpeg|png|webp)/.test(ii.mime) || ii.width < 600 || ii.height < 300) continue;
+          const ar = ii.width / ii.height; if (ar < 0.6 || ar > 3.2) continue;
+          if (BAD.test(name)) continue;
+          out.push({ src: ii.thumburl || ii.url, name: name.replace(/\.[a-z]+$/i, "").replace(/[_-]+/g, " "), page: ii.descriptionurl || D.W("File:" + name) });
+        }
+        cont = j.continue && j.continue.gimcontinue; if (!cont) break;
+      }
+    } catch (e) {}
+    galCache[t.id] = out;
+    return out;
+  }
+  async function loadGallery(t, box) {
+    const list = await fetchGallery(t);
+    if (!box.isConnected || !list.length) return;
+    const lead = $("img", box), leadSrc = lead && lead.src;
+    // put the lead image first, then everything else from the article
+    const items = [...(leadSrc ? [{ src: leadSrc, name: t.name, page: D.W(t.wiki) }] : []), ...list.filter((x) => x.src !== leadSrc)];
+    let gal = $(".gal", box);
+    if (!gal) { gal = document.createElement("div"); gal.className = "gal"; box.appendChild(gal); }
+    gal.innerHTML = items.map((x, i) => `<button data-gi="${i}" aria-pressed="${i === 0}" title="${esc(x.name)}"><img src="${x.src}" alt="" loading="lazy" referrerpolicy="no-referrer"></button>`).join("");
+    let n = $(".gal-n", box); if (!n) { n = document.createElement("div"); n.className = "gal-n"; box.insertBefore(n, gal); }
+    n.textContent = `${items.length} stills on file`;
+    gal.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-gi]"); if (!b) return;
+      const x = items[+b.dataset.gi];
+      $$("[data-gi]", gal).forEach((y) => y.setAttribute("aria-pressed", String(y === b)));
+      box.classList.remove("none");
+      let img = $(":scope > img", box);
+      if (!img) { img = document.createElement("img"); img.referrerPolicy = "no-referrer"; box.insertBefore(img, box.firstChild); const m = $(".msg", box); if (m) m.remove(); }
+      img.src = x.src; img.alt = x.name;
+      let cred = $(".cred", box); if (!cred) { cred = document.createElement("div"); cred.className = "cred"; box.insertBefore(cred, n); }
+      cred.innerHTML = `${esc(x.name)} · via <a href="${x.page}" target="_blank" rel="noopener">Wookieepedia</a> · © Lucasfilm, shown for reference`;
+    });
+  }
   async function loadReal(t, box = $("#pReal")) {
     if (!box) return;
     const page = D.W(t.wiki);
-    const none = () => { box.classList.add("none"); box.innerHTML = `<div class="msg">No image available · <a href="${page}" target="_blank" rel="noopener">Open the archive entry ↗</a></div>`; };
+    const none = () => { box.classList.add("none"); box.innerHTML = `<div class="msg">No lead image · <a href="${page}" target="_blank" rel="noopener">Open the archive entry ↗</a></div>`; };
     const show = (r) => {
       box.classList.remove("none");
       box.innerHTML = `<img src="${r.src}" alt="${esc(t.name)}" referrerpolicy="no-referrer"><div class="cred">Image via <a href="${r.page || page}" target="_blank" rel="noopener">${r.from}</a> · © Lucasfilm, shown for reference</div>`;
       $("img", box).addEventListener("error", () => { realCache[t.id] = "none"; none(); });
     };
-    if (realCache[t.id]) { realCache[t.id] === "none" ? none() : show(realCache[t.id]); return; }
+    if (realCache[t.id]) { realCache[t.id] === "none" ? none() : show(realCache[t.id]); if (t.gallery) loadGallery(t, box); return; }
     box.classList.add("none"); box.innerHTML = `<div class="msg">Requesting archive image…</div>`;
     const r = await fetchStill(t);
     realCache[t.id] = r || "none";
     if (!box.isConnected) return;
     r ? show(r) : none();
+    if (t.gallery) loadGallery(t, box);
   }
 
   // On-demand visual block: Sketchfab model or Wookieepedia still, loaded when the operator asks.
@@ -299,7 +347,7 @@
   function sitesBlock(p) {
     const sites = (window.SW_SITES && SW_SITES[p.id]) || [];
     if (!sites.length) return "";
-    sites.forEach((st, i) => { VISUALS[`s:${p.id}:${i}`] = { id: `s:${p.id}:${i}`, name: st.name, wiki: st.wiki, sfq: st.sfq }; });
+    sites.forEach((st, i) => { VISUALS[`s:${p.id}:${i}`] = { id: `s:${p.id}:${i}`, name: st.name, wiki: st.wiki, sfq: st.sfq, gallery: true }; });
     return `<div class="p-sec" id="sites" data-planet="${p.id}"><div class="p-h"><span>Sites</span><b>${sites.length}</b></div>
       <div class="sites">${sites.map((st, i) => `<button class="chip" data-site="${i}" aria-pressed="${i === 0}">${esc(st.name)}</button>`).join("")}</div>
       <div class="p-switch" role="tablist"><button class="chip" data-smode="real" aria-pressed="true">Still</button><button class="chip" data-smode="3d" aria-pressed="false">3D model</button></div>
@@ -522,11 +570,12 @@
       const n = nodes.find((n) => n.id === id);
       if (!n) return;
       const relset = opts.related(id);
+      const has = (d, t) => (relset.get(d.id) || "").includes(t);
       all.classed("sel", (d) => d.id === id)
         .classed("rel", (d) => relset.has(d.id))
-        .classed("ant", (d) => relset.get(d.id) === "ant")
-        .classed("fam", (d) => relset.get(d.id) === "fam")
-        .classed("home", (d) => relset.get(d.id) === "home");
+        .classed("ant", (d) => has(d, "ant"))
+        .classed("fam", (d) => has(d, "fam"))
+        .classed("home", (d) => has(d, "home"));
       g.selectAll(".clabel").classed("sel", (d) => d && d.key === n.cluster);
       svg.classed("dim", true);
       const k = Math.min(3.2, Math.max(1.6, 120 / (n.r + 6)));
@@ -574,11 +623,11 @@
     },
     related(id) {
       const c = CH[id], m = new Map();
+      const tag = (x, t) => { x = cid(x); if (x === id) return; m.set(x, (m.get(x) || "") + " " + t); };
       const r = relations(c);
-      [...r.parents, ...r.siblings, ...r.spouse, ...r.children].forEach((x) => m.set(cid(x), "fam"));
-      coStars(c, 5).forEach(([x]) => m.set(x, "co"));
-      if (c.antagonist) m.set(cid(c.antagonist), "ant");
-      m.delete(id);
+      [...r.parents, ...r.siblings, ...r.spouse, ...r.children].forEach((x) => tag(x, "fam"));
+      coStars(c, 6).forEach(([x]) => tag(x, "co"));
+      if (c.antagonist) tag(c.antagonist, "ant");
       return m;
     },
   });

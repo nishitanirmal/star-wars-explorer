@@ -192,7 +192,7 @@ window.SW = (function () {
   // faction is the cluster in the character view. Relations use character ids.
   const characters = [
     // Jedi Order
-    { id: "luke", name: "Luke Skywalker", faction: "Jedi Order", home: "tatooine", parents: ["anakin", "padme"], siblings: ["leia"], children: [], antagonist: "vader", wiki: "Luke_Skywalker" },
+    { id: "luke", name: "Luke Skywalker", faction: "Jedi Order", home: "tatooine", parents: ["anakin", "padme"], siblings: ["leia"], spouse: ["marajade"], children: [], antagonist: "vader", wiki: "Luke_Skywalker" },
     { id: "obiwan", name: "Obi-Wan Kenobi", faction: "Jedi Order", home: "stewjon", antagonist: "anakin", wiki: "Obi-Wan_Kenobi" },
     { id: "yoda", name: "Yoda", faction: "Jedi Order", home: null, antagonist: "palpatine", wiki: "Yoda" },
     { id: "quigon", name: "Qui-Gon Jinn", faction: "Jedi Order", home: "coruscant", antagonist: "maul", wiki: "Qui-Gon_Jinn" },
@@ -288,14 +288,14 @@ window.SW = (function () {
     { id: "xizor", name: "Prince Xizor", faction: "Underworld", home: "falleen", antagonist: "vader", wiki: "Xizor" },
 
     // Rebel Alliance
-    { id: "leia", name: "Leia Organa", faction: "Rebel Alliance", home: "alderaan", parents: ["anakin", "padme"], siblings: ["luke"], spouse: ["han"], children: ["kylo"], antagonist: "tarkin", wiki: "Leia_Skywalker_Organa_Solo" },
+    { id: "leia", name: "Leia Organa", faction: "Rebel Alliance", home: "alderaan", parents: ["anakin", "padme", "bail"], siblings: ["luke"], spouse: ["han"], children: ["kylo"], antagonist: "tarkin", wiki: "Leia_Skywalker_Organa_Solo" },
     { id: "han", name: "Han Solo", faction: "Rebel Alliance", home: "corellia", spouse: ["leia"], children: ["kylo"], antagonist: "jabba", wiki: "Han_Solo" },
     { id: "chewbacca", name: "Chewbacca", faction: "Rebel Alliance", home: "kashyyyk", wiki: "Chewbacca" },
     { id: "lando", name: "Lando Calrissian", faction: "Rebel Alliance", home: "socorro", wiki: "Lando_Calrissian" },
-    { id: "hera", name: "Hera Syndulla", faction: "Rebel Alliance", home: "ryloth", spouse: ["kanan"], antagonist: "pryce", wiki: "Hera_Syndulla" },
+    { id: "hera", name: "Hera Syndulla", faction: "Rebel Alliance", home: "ryloth", parents: ["cham"], spouse: ["kanan"], antagonist: "pryce", wiki: "Hera_Syndulla" },
     { id: "zeb", name: "Garazeb Orrelios", faction: "Rebel Alliance", home: "lasan", antagonist: "kallus", wiki: "Garazeb_Orrelios" },
     { id: "jyn", name: "Jyn Erso", faction: "Rebel Alliance", home: "vallt", parents: ["galen"], antagonist: "krennic", wiki: "Jyn_Erso" },
-    { id: "cassian", name: "Cassian Andor", faction: "Rebel Alliance", home: "kenari", antagonist: "dedra", wiki: "Cassian_Jeron_Andor" },
+    { id: "cassian", name: "Cassian Andor", faction: "Rebel Alliance", home: "kenari", parents: ["maarva"], antagonist: "dedra", wiki: "Cassian_Jeron_Andor" },
     { id: "chirrut", name: "Chirrut Îmwe", faction: "Rebel Alliance", home: "jedha", wiki: "Chirrut_%C3%8Emwe" },
     { id: "baze", name: "Baze Malbus", faction: "Rebel Alliance", home: "jedha", wiki: "Baze_Malbus" },
     { id: "bodhi", name: "Bodhi Rook", faction: "Rebel Alliance", home: "jedha", wiki: "Bodhi_Rook" },

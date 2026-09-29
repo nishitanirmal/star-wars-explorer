@@ -417,10 +417,10 @@
       const chars = D.characters.filter((c) => (IX.charMedia[c.id] || []).length);
       const factions = [...new Set(chars.map((c) => c.faction))];
       const total = chars.reduce((s, c) => s + Math.sqrt(IX.charMedia[c.id].length), 0);
-      // scale so the packed area of all bubbles uses about 40% of the stage
+      // scale so the packed area of all bubbles uses about 20% of the stage
       const sumSq = chars.reduce((s, c) => s + IX.charMedia[c.id].length, 0);
-      const unit = Math.sqrt((W * H * 0.4) / (Math.PI * Math.max(1, sumSq)));
-      const rOf = (c) => Math.max(5, Math.min(60, Math.sqrt(IX.charMedia[c.id].length) * unit));
+      const unit = Math.sqrt((W * H * 0.2) / (Math.PI * Math.max(1, sumSq)));
+      const rOf = (c) => Math.max(5, Math.min(42, Math.sqrt(IX.charMedia[c.id].length) * unit));
       const cols = Math.max(1, Math.round(Math.sqrt(factions.length * (W / H))));
       const rows = Math.ceil(factions.length / cols);
       const centers = {};

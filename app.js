@@ -307,24 +307,38 @@
     const list = await fetchGallery(t);
     if (!box.isConnected || !list.length) return;
     const lead = $("img", box), leadSrc = lead && lead.src;
-    // put the lead image first, then everything else from the article
+    // the lead image first, then everything else from the article
     const items = [...(leadSrc ? [{ src: leadSrc, name: t.name, page: D.W(t.wiki) }] : []), ...list.filter((x) => x.src !== leadSrc)];
+    let i = 0;
+    // wrap the main image so the arrows can sit over it
+    let frame = $(".frame", box);
+    if (!frame) { frame = document.createElement("div"); frame.className = "frame"; box.insertBefore(frame, box.firstChild); const m = $(".msg", box); if (m) m.remove(); if (lead) frame.appendChild(lead); }
     let gal = $(".gal", box);
     if (!gal) { gal = document.createElement("div"); gal.className = "gal"; box.appendChild(gal); }
-    gal.innerHTML = items.map((x, i) => `<button data-gi="${i}" aria-pressed="${i === 0}" title="${esc(x.name)}"><img src="${x.src}" alt="" loading="lazy" referrerpolicy="no-referrer"></button>`).join("");
+    gal.innerHTML = items.map((x, k) => `<button data-gi="${k}" aria-pressed="${k === 0}" title="${esc(x.name)}"><img src="${x.src}" alt="" loading="lazy" referrerpolicy="no-referrer"></button>`).join("");
     let n = $(".gal-n", box); if (!n) { n = document.createElement("div"); n.className = "gal-n"; box.insertBefore(n, gal); }
-    n.textContent = `${items.length} stills on file`;
-    gal.addEventListener("click", (e) => {
-      const b = e.target.closest("[data-gi]"); if (!b) return;
-      const x = items[+b.dataset.gi];
-      $$("[data-gi]", gal).forEach((y) => y.setAttribute("aria-pressed", String(y === b)));
+    n.innerHTML = `<span>${items.length} stills on file</span><span class="cnt"></span>`;
+    if (items.length > 1 && !$(".gal-btn", frame)) {
+      frame.insertAdjacentHTML("beforeend", `<button class="gal-btn prev" aria-label="Previous still">‹</button><button class="gal-btn next" aria-label="Next still">›</button>`);
+    }
+    function show(k) {
+      i = (k + items.length) % items.length;
+      const x = items[i];
       box.classList.remove("none");
-      let img = $(":scope > img", box);
-      if (!img) { img = document.createElement("img"); img.referrerPolicy = "no-referrer"; box.insertBefore(img, box.firstChild); const m = $(".msg", box); if (m) m.remove(); }
+      let img = $("img", frame);
+      if (!img) { img = document.createElement("img"); img.referrerPolicy = "no-referrer"; frame.insertBefore(img, frame.firstChild); }
       img.src = x.src; img.alt = x.name;
       let cred = $(".cred", box); if (!cred) { cred = document.createElement("div"); cred.className = "cred"; box.insertBefore(cred, n); }
       cred.innerHTML = `${esc(x.name)} · via <a href="${x.page}" target="_blank" rel="noopener">Wookieepedia</a> · © Lucasfilm, shown for reference`;
-    });
+      $(".cnt", n).textContent = `${i + 1} / ${items.length}`;
+      $$("[data-gi]", gal).forEach((y, k) => y.setAttribute("aria-pressed", String(k === i)));
+      const th = $(`[data-gi="${i}"]`, gal); if (th) th.scrollIntoView({ inline: "center", block: "nearest", behavior: reduced ? "auto" : "smooth" });
+    }
+    $(".cnt", n).textContent = `1 / ${items.length}`;
+    gal.addEventListener("click", (e) => { const b = e.target.closest("[data-gi]"); if (b) { show(+b.dataset.gi); SWSound.click(); } });
+    frame.addEventListener("click", (e) => { const b = e.target.closest(".gal-btn"); if (b) { show(i + (b.classList.contains("next") ? 1 : -1)); SWSound.click(); } });
+    box.tabIndex = 0;
+    box.addEventListener("keydown", (e) => { if (e.key === "ArrowRight") show(i + 1); if (e.key === "ArrowLeft") show(i - 1); });
   }
   async function loadReal(t, box = $("#pReal")) {
     if (!box) return;
@@ -332,7 +346,7 @@
     const none = () => { box.classList.add("none"); box.innerHTML = `<div class="msg">No lead image · <a href="${page}" target="_blank" rel="noopener">Open the archive entry ↗</a></div>`; };
     const show = (r) => {
       box.classList.remove("none");
-      box.innerHTML = `<img src="${r.src}" alt="${esc(t.name)}" referrerpolicy="no-referrer"><div class="cred">Image via <a href="${r.page || page}" target="_blank" rel="noopener">${r.from}</a> · © Lucasfilm, shown for reference</div>`;
+      box.innerHTML = `<div class="frame"><img src="${r.src}" alt="${esc(t.name)}" referrerpolicy="no-referrer"></div><div class="cred">Image via <a href="${r.page || page}" target="_blank" rel="noopener">${r.from}</a> · © Lucasfilm, shown for reference</div>`;
       $("img", box).addEventListener("error", () => { realCache[t.id] = "none"; none(); });
     };
     if (realCache[t.id]) { realCache[t.id] === "none" ? none() : show(realCache[t.id]); if (t.gallery) loadGallery(t, box); return; }

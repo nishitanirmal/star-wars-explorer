@@ -116,8 +116,12 @@
   function showPanel(html) {
     if (disposeModel) { disposeModel(); disposeModel = null; }
     panelBody.innerHTML = html;
-    panel.scrollTop = 0;
-    panel.classList.add("open");
+    panelBody.scrollTop = 0;
+    if (matchMedia("(max-width: 900px)").matches) {
+      // on phones a selection nudges the drawer instead of opening it
+      if (!panel.classList.contains("open")) { panel.classList.remove("bounce"); void panel.offsetWidth; panel.classList.add("bounce"); }
+      const t = $(".p-title", panelBody); $("#pHint").textContent = t ? t.textContent : "";
+    } else panel.classList.add("open");
     if (!reduced) { panelBody.classList.remove("decode"); panel.classList.remove("scan"); void panelBody.offsetWidth; panelBody.classList.add("decode"); panel.classList.add("scan"); }
   }
   function idlePanel() {
@@ -129,7 +133,7 @@
       tech: "Select a weapon, gadget or ship. Drag to turn the hologram, scroll to zoom.",
     };
     showPanel(`<div class="p-kicker">Readout</div><div class="idle">${TIE_SVG}${msgs[state.view]}<br><br>Filters in the bar apply to every view. ${IX.vm.length} of ${D.media.length} entries shown.</div>`);
-    panel.classList.remove("open");
+    panel.classList.remove("open", "bounce"); $("#pHint").textContent = "";
   }
 
   function panelMedia(m) {
@@ -395,34 +399,43 @@
     }
   });
   $("#pClose").addEventListener("click", (e) => { e.stopPropagation(); panel.classList.remove("open"); });
-  // Phone drawer: tap the grip to toggle, drag it to move, release to snap.
+  // Phone drawer: drag the grip either way, swipe down on the content to close,
+  // swipe up on the bottom tab to open, tap the tab to toggle.
   (function drawer() {
-    const h = $("#pHandle");
-    let y0 = 0, t0 = 0, dy = 0, drag = false;
+    const h = $("#pHandle"), body = panelBody;
+    let y0 = 0, t0 = 0, dy = 0, drag = false, src = null;
     const isPhone = () => matchMedia("(max-width: 900px)").matches;
-    h.addEventListener("pointerdown", (e) => {
-      if (!isPhone() || e.target.closest("#pClose")) return;
-      drag = true; dy = 0; y0 = e.clientY; t0 = performance.now();
-      h.setPointerCapture(e.pointerId); panel.classList.add("dragging");
-    });
-    h.addEventListener("pointermove", (e) => {
+    const PEEK = 46, MIN = 40;
+    function start(e, from) {
+      if (!isPhone() || e.target.closest("#pClose") || e.pointerType === "mouse" && from === "body") return;
+      const open = panel.classList.contains("open");
+      if (from === "body" && (!open || body.scrollTop > 0)) return; // let the content scroll normally
+      drag = true; src = from; dy = 0; y0 = e.clientY; t0 = performance.now();
+      (from === "body" ? body : h).setPointerCapture(e.pointerId);
+    }
+    function move(e) {
       if (!drag) return;
       dy = e.clientY - y0;
       const open = panel.classList.contains("open");
-      const base = open ? 0 : panel.offsetHeight - 46;
-      const y = Math.max(0, Math.min(panel.offsetHeight - 46, base + dy));
+      if (src === "body" && dy < 0) { dy = 0; return; }           // content only drags the drawer downward
+      if (src === "body" && !panel.classList.contains("dragging")) panel.classList.add("dragging");
+      if (src === "handle") panel.classList.add("dragging");
+      const base = open ? 0 : panel.offsetHeight - PEEK;
+      const y = Math.max(0, Math.min(panel.offsetHeight - PEEK, base + dy));
       panel.style.transform = `translateY(${y}px)`;
-    });
-    const end = () => {
+    }
+    function end() {
       if (!drag) return;
       drag = false; panel.classList.remove("dragging"); panel.style.transform = "";
       const open = panel.classList.contains("open");
       const v = dy / Math.max(1, performance.now() - t0); // px per ms
-      if (Math.abs(dy) < 6) { panel.classList.toggle("open"); SWSound.click(); return; } // tap
-      if (open && (dy > 80 || v > 0.5)) { panel.classList.remove("open"); SWSound.close(); }
-      else if (!open && (dy < -80 || v < -0.5)) { panel.classList.add("open"); SWSound.open(); }
-    };
-    h.addEventListener("pointerup", end); h.addEventListener("pointercancel", end);
+      if (src === "handle" && Math.abs(dy) < 6) { panel.classList.toggle("open"); SWSound.click(); return; } // tap
+      if (open && (dy > MIN || v > 0.35)) { panel.classList.remove("open"); SWSound.close(); }
+      else if (!open && (dy < -MIN || v < -0.35)) { panel.classList.add("open"); SWSound.open(); }
+    }
+    h.addEventListener("pointerdown", (e) => start(e, "handle"));
+    body.addEventListener("pointerdown", (e) => start(e, "body"));
+    for (const el of [h, body]) { el.addEventListener("pointermove", move); el.addEventListener("pointerup", end); el.addEventListener("pointercancel", end); }
   })();
 
   // ------------------------------------------------------------- selection
@@ -759,6 +772,14 @@
     e.currentTarget.setAttribute("aria-pressed", String(state.nonCanon));
     renderAll();
   });
+  (function navScroll() {
+    const wrap = $("#tabwrap"), tabs = $(".tabs", wrap);
+    const update = () => { wrap.classList.toggle("can-l", tabs.scrollLeft > 4); wrap.classList.toggle("can-r", tabs.scrollLeft + tabs.clientWidth < tabs.scrollWidth - 4); };
+    tabs.addEventListener("scroll", update, { passive: true }); addEventListener("resize", update); update();
+    $$("[data-scroll]", wrap).forEach((b) => b.addEventListener("click", () => tabs.scrollBy({ left: +b.dataset.scroll * 140, behavior: reduced ? "auto" : "smooth" })));
+    // keep the selected view in sight
+    $$(".tab").forEach((t) => t.addEventListener("click", () => t.scrollIntoView({ inline: "center", block: "nearest", behavior: reduced ? "auto" : "smooth" })));
+  })();
   function fitBar() { document.documentElement.style.setProperty("--bar-h", $("#bar").offsetHeight + "px"); }
   fitBar(); new ResizeObserver(fitBar).observe($("#bar"));
   let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => render(state.view), 200); });

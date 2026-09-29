@@ -234,12 +234,12 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 svg.dim .bubble:not(.sel):not(.rel) rect.lblbg { opacity: .5; }
 .bubble.sel text.lbl { fill: #fff; font-weight: 500; }
 .bubble:hover circle.core { stroke: var(--glow); stroke-width: 1.6; }
-.bubble.sel circle.core { stroke: var(--red); stroke-width: 1.6; fill: rgba(255,59,59,.12); }
-.bubble.sel circle.ring { stroke: var(--red); }
+.bubble.sel circle.core { stroke: var(--amber); stroke-width: 1.6; fill: rgba(255,181,71,.14); }
+.bubble.sel circle.ring { stroke: var(--amber); }
 .bubble.rel circle.core { stroke: var(--glow); stroke-width: 1.4; fill: rgba(111,150,255,.22); }
 .bubble.rel.fam circle.core { stroke: var(--green); fill: rgba(76,224,160,.14); }
-.bubble.rel.ant circle.core { stroke: var(--amber); fill: rgba(255,181,71,.12); }
-.bubble.rel.fam.ant circle.core { stroke: var(--amber); fill: rgba(76,224,160,.14); }
+.bubble.rel.ant circle.core { stroke: var(--red); fill: rgba(255,59,59,.12); }
+.bubble.rel.fam.ant circle.core { stroke: var(--red); fill: rgba(76,224,160,.14); }
 .bubble.rel.fam.ant circle.ring { stroke: var(--green); }
 svg.grab { cursor: grab; } svg.grab:active { cursor: grabbing; }
 svg.grab .bubble, svg.grab .bubble * { cursor: pointer; }
@@ -249,7 +249,7 @@ svg.dim .bubble:not(.sel):not(.rel) { opacity: .28; }
 .cring { fill: none; stroke: var(--line-soft); stroke-dasharray: 3 5; }
 .planet .sphere { fill: url(#sphere); stroke: var(--line); stroke-width: 1; }
 .planet .lat { fill: none; stroke: var(--line-soft); stroke-width: .6; }
-.planet.sel .sphere { stroke: var(--red); stroke-width: 1.6; }
+.planet.sel .sphere { stroke: var(--amber); stroke-width: 1.6; }
 .planet.rel .sphere { stroke: var(--glow); stroke-width: 1.4; }
 .planet.rel.home .sphere { stroke: var(--green); }
 .ring-orbit { fill: none; stroke: var(--line-soft); stroke-width: .5; }
@@ -267,7 +267,7 @@ svg.dim .bubble:not(.sel):not(.rel) { opacity: .28; }
 .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; max-width: 1100px; }
 .tcard { border: 1px solid var(--line-soft); padding: 10px; text-align: left; position: relative; transition: transform .5s cubic-bezier(.2,.8,.2,1), opacity .5s, border-color .3s; min-width: 0; }
 .tcard:hover { border-color: var(--glow); }
-.tcard.sel { border-color: var(--red); background: var(--fill); transform: scale(1.03); }
+.tcard.sel { border-color: var(--amber); background: var(--fill); transform: scale(1.03); }
 .tgrid.focused .tcard:not(.sel) { opacity: .45; transform: scale(.97); }
 .tcard canvas { width: 100%; aspect-ratio: 1; display: block; }
 .tcard .tn { font: 11px/1.4 var(--display); margin-top: 8px; }
@@ -393,15 +393,15 @@ svg.dim .bubble:not(.sel):not(.rel) { opacity: .28; }
     <div class="tl-list" id="tlList"></div>
   </section>
   <section class="view" id="v-characters" aria-label="Characters"><svg id="svgChars"></svg>
-    <div class="legend"><span><i style="border-color:var(--red)"></i>Selected</span><span><i style="border-color:var(--green)"></i>Family</span><span><i style="border-color:var(--glow)"></i>Appears with</span><span><i style="border-color:var(--amber)"></i>Antagonist</span></div>
+    <div class="legend"><span><i style="border-color:var(--amber)"></i>Selected</span><span><i style="border-color:var(--green)"></i>Family</span><span><i style="border-color:var(--glow)"></i>Appears with</span><span><i style="border-color:var(--red)"></i>Antagonist</span></div>
     <div class="zoomctl"><button data-zoom="in" aria-label="Zoom in">+</button><button data-zoom="out" aria-label="Zoom out">−</button><button data-zoom="reset" aria-label="Reset zoom">⟲</button></div>
   </section>
   <section class="view" id="v-planets" aria-label="Planets"><svg id="svgPlanets"></svg>
-    <div class="legend"><span><i style="border-color:var(--red)"></i>Selected</span><span><i style="border-color:var(--glow)"></i>Shares a story</span></div>
+    <div class="legend"><span><i style="border-color:var(--amber)"></i>Selected</span><span><i style="border-color:var(--glow)"></i>Shares a story</span></div>
     <div class="zoomctl"><button data-zoom="in" aria-label="Zoom in">+</button><button data-zoom="out" aria-label="Zoom out">−</button><button data-zoom="reset" aria-label="Reset zoom">⟲</button></div>
   </section>
   <section class="view" id="v-creators" aria-label="Creators"><svg id="svgCreators"></svg>
-    <div class="legend"><span><i style="border-color:var(--red)"></i>Selected</span><span><i style="border-color:var(--glow)"></i>Collaborator</span></div>
+    <div class="legend"><span><i style="border-color:var(--amber)"></i>Selected</span><span><i style="border-color:var(--glow)"></i>Collaborator</span></div>
     <div class="zoomctl"><button data-zoom="in" aria-label="Zoom in">+</button><button data-zoom="out" aria-label="Zoom out">−</button><button data-zoom="reset" aria-label="Reset zoom">⟲</button></div>
   </section>
   <section class="view" id="v-tech" aria-label="Tech"><div id="techGrid"></div></section>
@@ -414,11 +414,11 @@ svg.dim .bubble:not(.sel):not(.rel) { opacity: .28; }
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="data.js?v=202609300426"></script>
-<script src="arcs.js?v=202609300426"></script>
-<script src="sites.js?v=202609300426"></script>
-<script src="models.js?v=202609300426"></script>
-<script src="sound.js?v=202609300426"></script>
-<script src="app.js?v=202609300426"></script>
+<script src="data.js?v=202609300436"></script>
+<script src="arcs.js?v=202609300436"></script>
+<script src="sites.js?v=202609300436"></script>
+<script src="models.js?v=202609300436"></script>
+<script src="sound.js?v=202609300436"></script>
+<script src="app.js?v=202609300436"></script>
 </body>
 </html>

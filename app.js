@@ -594,7 +594,23 @@
         const show = selected || highlighted || topR.includes(d.id) || (R >= 9 && fits) || (R >= 30);
         t.style("font-size", fsS / k + "px").style("display", show ? null : "none").classed("out", !fits);
         if (opts.below || !fits) t.attr("dy", (d.r + 12 / k)).attr("y", 0); else t.attr("dy", "0.35em").attr("y", 0);
+        d._pri = selected ? 3 : highlighted ? 2 : topR.includes(d.id) ? 1 : 0; d._fits = fits; d._shown = show;
       });
+      // Collision pass: labels outside their bubble must not sit on top of each other.
+      // Higher priority wins; a highlighted label is nudged down, a lesser one is hidden.
+      const taken = [];
+      const overlaps = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+      const shown = nodes.filter((d) => d._shown).sort((a, b) => b._pri - a._pri || b.r - a.r);
+      for (const d of shown) {
+        const el = g.selectAll(".bubble").filter((x) => x === d).select("text.lbl");
+        if (el.empty()) continue;
+        const node = el.node();
+        const rect = () => { const b = node.getBBox(); return { x: (d.x + b.x) * k, y: (d.y + b.y) * k, w: b.width * k, h: b.height * k }; };
+        let r = rect(), tries = 0;
+        while (taken.some((t) => overlaps(r, t)) && d._pri >= 2 && tries < 4) { el.attr("dy", parseFloat(el.attr("dy")) + 11 / k); r = rect(); tries++; }
+        if (taken.some((t) => overlaps(r, t)) && d._pri < 3) { if (d._pri < 2 || tries >= 4) { el.style("display", "none"); continue; } }
+        taken.push(r);
+      }
     }
     function size() { const r = svg.node().getBoundingClientRect(); W = r.width || 800; H = r.height || 600; svg.attr("viewBox", `0 0 ${W} ${H}`); zoom.translateExtent([[0, 0], [W, H]]).extent([[0, 0], [W, H]]); }
     const section = svg.node().closest(".view");

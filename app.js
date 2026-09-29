@@ -394,7 +394,36 @@
       if (mode === "real") loadReal(spec, $(".p-real", wrap));
     }
   });
-  $("#pClose").addEventListener("click", () => { panel.classList.remove("open"); });
+  $("#pClose").addEventListener("click", (e) => { e.stopPropagation(); panel.classList.remove("open"); });
+  // Phone drawer: tap the grip to toggle, drag it to move, release to snap.
+  (function drawer() {
+    const h = $("#pHandle");
+    let y0 = 0, t0 = 0, dy = 0, drag = false;
+    const isPhone = () => matchMedia("(max-width: 900px)").matches;
+    h.addEventListener("pointerdown", (e) => {
+      if (!isPhone() || e.target.closest("#pClose")) return;
+      drag = true; dy = 0; y0 = e.clientY; t0 = performance.now();
+      h.setPointerCapture(e.pointerId); panel.classList.add("dragging");
+    });
+    h.addEventListener("pointermove", (e) => {
+      if (!drag) return;
+      dy = e.clientY - y0;
+      const open = panel.classList.contains("open");
+      const base = open ? 0 : panel.offsetHeight - 46;
+      const y = Math.max(0, Math.min(panel.offsetHeight - 46, base + dy));
+      panel.style.transform = `translateY(${y}px)`;
+    });
+    const end = () => {
+      if (!drag) return;
+      drag = false; panel.classList.remove("dragging"); panel.style.transform = "";
+      const open = panel.classList.contains("open");
+      const v = dy / Math.max(1, performance.now() - t0); // px per ms
+      if (Math.abs(dy) < 6) { panel.classList.toggle("open"); SWSound.click(); return; } // tap
+      if (open && (dy > 80 || v > 0.5)) { panel.classList.remove("open"); SWSound.close(); }
+      else if (!open && (dy < -80 || v < -0.5)) { panel.classList.add("open"); SWSound.open(); }
+    };
+    h.addEventListener("pointerup", end); h.addEventListener("pointercancel", end);
+  })();
 
   // ------------------------------------------------------------- selection
   const KIND_VIEW = { media: "timeline", character: "characters", planet: "planets", creator: "creators", tech: "tech" };

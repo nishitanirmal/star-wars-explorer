@@ -822,13 +822,11 @@
   // HUD readouts: clock and cursor position
   const roPos = $("#roPos"), roClock = $("#roClock");
   setInterval(() => { const d = new Date(); roClock.textContent = `GST ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`; }, 1000);
-  // Live visit counter (Abacus, an open hit-counter service). One hit per browser session.
+  // Live visit counter (Abacus, an open hit-counter service). Every load logs a traveller.
   (async function visits() {
     const out = $("#roVisits"), tab = $("#pVisits") || { textContent: "" };
-    let seen = false; try { seen = sessionStorage.getItem("sw-visit") === "1"; } catch (e) {}
     try {
-      const j = await (await fetch(`https://abacus.jasoncameron.dev/${seen ? "get" : "hit"}/nishitanirmal-sw-explorer/visits`)).json();
-      try { sessionStorage.setItem("sw-visit", "1"); } catch (e) {}
+      const j = await (await fetch(`https://abacus.jasoncameron.dev/hit/nishitanirmal-sw-explorer/visits`)).json();
       const n = +j.value || 0, t0 = performance.now(), dur = reduced ? 0 : 1200;
       const paint = (v) => { const str = v.toLocaleString("en-US"); out.textContent = str.padStart(6, "0"); tab.textContent = `${str} visits`; };
       (function tick() { const u = dur ? Math.min(1, (performance.now() - t0) / dur) : 1; paint(Math.round(n * (1 - Math.pow(1 - u, 3)))); if (u < 1) requestAnimationFrame(tick); })();

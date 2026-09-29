@@ -118,6 +118,7 @@
     panelBody.innerHTML = html;
     panel.scrollTop = 0;
     panel.classList.add("open");
+    if (!reduced) { panelBody.classList.remove("decode"); panel.classList.remove("scan"); void panelBody.offsetWidth; panelBody.classList.add("decode"); panel.classList.add("scan"); }
   }
   function idlePanel() {
     const msgs = {
@@ -159,7 +160,7 @@
       <div class="p-sub">${wiki(c.wiki)}</div>
       <div class="stat"><div><div class="k">Appearances</div><div class="v">${ms.length}</div></div><div><div class="k">Homeworld</div><div class="v" style="font-size:13px;padding-top:6px">${c.home && PL[c.home] ? link("planet", c.home, PL[c.home].name) : "Unknown"}</div></div></div>
       ${c.antagonist && CH[cid(c.antagonist)] ? sec("Main antagonist", null, charLinks([c.antagonist])) : ""}
-      ${(r.parents.length || r.siblings.length || r.spouse.length || r.children.length) ? `<div class="p-sec"><div class="p-h"><span>Family</span></div>${rel("Parents", r.parents)}${rel("Siblings", r.siblings)}${rel("Spouse", r.spouse)}${rel("Children", r.children)}</div>` : ""}
+      <div class="p-sec"><div class="p-h"><span>Family</span><b>${r.parents.length + r.siblings.length + r.spouse.length + r.children.length}</b></div>${(r.parents.length || r.siblings.length || r.spouse.length || r.children.length) ? `${rel("Parents", r.parents)}${rel("Siblings", r.siblings)}${rel("Spouse", r.spouse)}${rel("Children", r.children)}` : `<div class="idle">No recorded family.</div>`}</div>
       ${sec("Often appears with", null, co.length ? `<div class="links">${co.map(([id, n]) => link("character", id, CH[id].name, `×${n}`)).join("")}</div>` : "")}
       ${sec("Planets travelled to", null, planetLinks(visitedPlanets(c)))}
       ${sec("Appears in", ms.length, mediaLinks(ms))}
@@ -205,13 +206,72 @@
       <div class="p-kicker">${esc(t.kind)}</div>
       <div class="p-title">${esc(t.name)}</div>
       <div class="p-sub">${wiki(t.wiki)}</div>
+      <div class="p-switch" role="tablist"><button class="chip" data-mode="holo" aria-pressed="true">Hologram</button><button class="chip" data-mode="3d" aria-pressed="false">3D model</button><button class="chip" data-mode="real" aria-pressed="false">Still</button></div>
       <div class="p-model" id="pModel"><span class="tag">Hologram</span><span class="hint">Drag to rotate · scroll to zoom</span></div>
+      <div class="p-3d" id="p3d" hidden></div><div class="p-cred" id="p3dCred" hidden></div>
+      <div class="p-real" id="pReal" hidden></div>
       <p class="p-text">${esc(t.blurb)}</p>
       <p class="p-text" style="color:var(--ink-dim)">${esc(t.use)}</p>
       ${sec("Used by", t.users.length, charLinks(t.users))}
       ${sec("Appears in", ms.length, mediaLinks(ms))}
     `);
     disposeModel = SWModels.mount($("#pModel"), t.model);
+    $$(".p-switch .chip").forEach((b) => b.addEventListener("click", () => {
+      $$(".p-switch .chip").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+      const mode = b.dataset.mode;
+      $("#pModel").hidden = mode !== "holo"; $("#pReal").hidden = mode !== "real";
+      $("#p3d").hidden = mode !== "3d"; $("#p3dCred").hidden = mode !== "3d";
+      if (mode === "real") loadReal(t);
+      if (mode === "3d") load3d(t);
+    }));
+  }
+  // Community 3D models from Sketchfab, searched live and shown in Sketchfab's own viewer.
+  const sfCache = {};
+  async function load3d(t, step = 0) {
+    const box = $("#p3d"), cred = $("#p3dCred");
+    if (!box) return;
+    if (!sfCache[t.id]) {
+      box.innerHTML = `<div class="msg">Searching Sketchfab for a model…</div>`; cred.innerHTML = "";
+      try {
+        const url = `https://api.sketchfab.com/v3/search?type=models&q=${encodeURIComponent(t.sfq || t.name)}&sort_by=-likeCount&count=8`;
+        const j = await (await fetch(url)).json();
+        sfCache[t.id] = { i: 0, list: (j.results || []).filter((r) => r.uid) };
+      } catch (err) {
+        box.innerHTML = `<div class="msg">Could not reach Sketchfab.<br><a href="https://sketchfab.com/search?q=${encodeURIComponent(t.sfq || t.name)}" target="_blank" rel="noopener">Search Sketchfab ↗</a></div>`;
+        return;
+      }
+    }
+    const c = sfCache[t.id];
+    if (!c.list.length) { box.innerHTML = `<div class="msg">No model found.<br><a href="https://sketchfab.com/search?q=${encodeURIComponent(t.sfq || t.name)}" target="_blank" rel="noopener">Search Sketchfab ↗</a></div>`; return; }
+    c.i = (c.i + step + c.list.length) % c.list.length;
+    const m = c.list[c.i];
+    if (!box.isConnected) return;
+    box.innerHTML = `<iframe title="${esc(m.name)}" src="https://sketchfab.com/models/${m.uid}/embed?autostart=1&ui_theme=dark&ui_infos=0&ui_watermark=0&ui_hint=0&transparent=1&preload=1" allow="autoplay; fullscreen; xr-spatial-tracking" allowfullscreen></iframe>`;
+    const lic = m.license && (m.license.label || m.license);
+    cred.innerHTML = `<span><a href="${m.viewerUrl || ("https://sketchfab.com/3d-models/" + m.uid)}" target="_blank" rel="noopener">${esc(m.name)}</a> by ${esc(m.user ? m.user.displayName || m.user.username : "unknown")}${lic ? " · " + esc(lic) : ""} · ${c.i + 1}/${c.list.length}</span><button id="sfNext">Next model</button>`;
+    $("#sfNext").addEventListener("click", () => load3d(t, 1));
+  }
+  // Lead image of the item's Wookieepedia article, fetched live from the MediaWiki API.
+  const realCache = {};
+  async function loadReal(t) {
+    const box = $("#pReal");
+    if (!box) return;
+    const page = D.W(t.wiki);
+    const credit = `<div class="cred">Image via <a href="${page}" target="_blank" rel="noopener">Wookieepedia</a> · © Lucasfilm, shown for reference</div>`;
+    if (realCache[t.id]) { box.innerHTML = realCache[t.id] === "none" ? `<div class="msg">No image on the Wookieepedia article.<br><a href="${page}" target="_blank" rel="noopener">Open the article ↗</a></div>` : `<img src="${realCache[t.id]}" alt="${esc(t.name)}">${credit}`; return; }
+    box.innerHTML = `<div class="msg">Requesting archive image…</div>`;
+    try {
+      const url = `https://starwars.fandom.com/api.php?action=query&format=json&origin=*&redirects=1&prop=pageimages&piprop=thumbnail&pithumbsize=900&titles=${encodeURIComponent(decodeURIComponent(t.wiki))}`;
+      const r = await fetch(url);
+      const j = await r.json();
+      const pg = Object.values(j.query.pages)[0];
+      const src = pg && pg.thumbnail && pg.thumbnail.source;
+      realCache[t.id] = src || "none";
+      if (!box.isConnected) return;
+      box.innerHTML = src ? `<img src="${src}" alt="${esc(t.name)}">${credit}` : `<div class="msg">No image on the Wookieepedia article.<br><a href="${page}" target="_blank" rel="noopener">Open the article ↗</a></div>`;
+    } catch (err) {
+      box.innerHTML = `<div class="msg">Could not reach Wookieepedia.<br><a href="${page}" target="_blank" rel="noopener">Open the article ↗</a></div>`;
+    }
   }
 
   panelBody.addEventListener("click", (e) => {
@@ -228,6 +288,7 @@
     state.sel = { kind, id };
     const p = evt ? [evt.clientX, evt.clientY] : null;
     stars.warp(p ? p[0] : null, p ? p[1] : null, kind === "media" ? 7 : 10);
+    SWSound.warp(); setTimeout(SWSound.open, 180);
     if (kind === "media") { panelMedia(MD[id]); focusCard(id); }
     if (kind === "character") { panelCharacter(CH[id]); charts.characters.focus(id); }
     if (kind === "planet") { panelPlanet(PL[id]); charts.planets.focus(id); }
@@ -236,6 +297,7 @@
   }
   function clearSel() {
     state.sel = null;
+    SWSound.close();
     idlePanel();
     $("#tlList").classList.remove("focused"); $$(".card.open").forEach((c) => c.classList.remove("open"));
     Object.values(charts).forEach((c) => c.focus(null));
@@ -286,7 +348,9 @@
     for (const m of ms) {
       const era = state.order === "release" ? `${Math.floor(m.year / 10) * 10}s` : eraOf(m.story[0]);
       if (era !== lastEra) { html += `<div class="era">${era}</div>`; lastEra = era; }
-      const primary = state.order === "release" ? `<b>${m.year}</b>${fmtRange(m.story)}` : `<b>${fmtYear(m.story[0])}</b>${m.story[0] !== m.story[1] ? "to " + fmtYear(m.story[1]) : ""}<span style="opacity:.7">rel. ${m.year}</span>`;
+      const primary = state.order === "release"
+        ? `<b>${m.year}</b><span>${fmtYear(m.story[0])}</span>${m.story[0] !== m.story[1] ? `<span>to ${fmtYear(m.story[1])}</span>` : ""}`
+        : `<b>${fmtYear(m.story[0])}</b>${m.story[0] !== m.story[1] ? `<span>to ${fmtYear(m.story[1])}</span>` : ""}<span class="rel">rel. ${m.year}</span>`;
       html += `<article class="card" data-id="${m.id}">
         <div class="yr">${primary}</div>
         <div class="body">
@@ -342,8 +406,16 @@
   // ------------------------------------------------------------- bubble charts
   function makeChart(svgSel, opts) {
     const svg = d3.select(svgSel);
-    let g, nodes = [], sel = null, W = 0, H = 0, zoomed = false;
-    function size() { const r = svg.node().getBoundingClientRect(); W = r.width || 800; H = r.height || 600; svg.attr("viewBox", `0 0 ${W} ${H}`); }
+    let g, nodes = [], sel = null, W = 0, H = 0;
+    const zoom = d3.zoom().scaleExtent([1, 9]).clickDistance(5).on("zoom", (e) => { if (g) g.attr("transform", e.transform); });
+    function size() { const r = svg.node().getBoundingClientRect(); W = r.width || 800; H = r.height || 600; svg.attr("viewBox", `0 0 ${W} ${H}`); zoom.translateExtent([[0, 0], [W, H]]).extent([[0, 0], [W, H]]); }
+    const section = svg.node().closest(".view");
+    section.querySelectorAll("[data-zoom]").forEach((b) => b.addEventListener("click", () => {
+      const t = svg.transition().duration(reduced ? 0 : 500).ease(d3.easeCubicOut);
+      if (b.dataset.zoom === "in") t.call(zoom.scaleBy, 1.6);
+      else if (b.dataset.zoom === "out") t.call(zoom.scaleBy, 1 / 1.6);
+      else { if (sel) clearSel(); else t.call(zoom.transform, d3.zoomIdentity); }
+    }));
     function render() {
       size();
       svg.selectAll("*").remove();
@@ -355,6 +427,8 @@
       grad.append("stop").attr("offset", "100%").attr("stop-color", "#02030a").attr("stop-opacity", .9);
       hud(svg, W, H);
       g = svg.append("g").attr("class", "zoomable");
+      svg.classed("grab", true).call(zoom).on("dblclick.zoom", null);
+      svg.call(zoom.transform, d3.zoomIdentity);
       nodes = opts.layout(W, H);
       opts.draw(g, nodes, W, H);
       g.selectAll(".bubble").on("click", (e, d) => {
@@ -362,7 +436,7 @@
         if (sel === d.id) return clearSel();
         select(opts.kind, d.id, false, e);
       });
-      svg.on("click", () => { if (sel) clearSel(); });
+      svg.on("click", (e) => { if (sel && !e.target.closest(".bubble")) clearSel(); });
       if (sel) focus(sel, true);
     }
     function focus(id, instant = false) {
@@ -370,11 +444,10 @@
       const all = g ? g.selectAll(".bubble") : null;
       if (!g) return;
       if (!id) {
-        all.classed("sel rel ant home", false);
+        all.classed("sel rel ant fam home", false);
         svg.classed("dim", false);
         g.selectAll(".clabel").classed("sel", false);
-        g.transition().duration(instant || reduced ? 0 : 900).ease(d3.easeCubicInOut).attr("transform", "translate(0,0) scale(1)");
-        zoomed = false;
+        svg.transition().duration(instant || reduced ? 0 : 900).ease(d3.easeCubicInOut).call(zoom.transform, d3.zoomIdentity);
         return;
       }
       const n = nodes.find((n) => n.id === id);
@@ -383,20 +456,15 @@
       all.classed("sel", (d) => d.id === id)
         .classed("rel", (d) => relset.has(d.id))
         .classed("ant", (d) => relset.get(d.id) === "ant")
+        .classed("fam", (d) => relset.get(d.id) === "fam")
         .classed("home", (d) => relset.get(d.id) === "home");
       g.selectAll(".clabel").classed("sel", (d) => d && d.key === n.cluster);
       svg.classed("dim", true);
       const k = Math.min(3.2, Math.max(1.6, 120 / (n.r + 6)));
       const tx = W / 2 - n.x * k, ty = H / 2 - n.y * k;
-      const t = g.transition().duration(instant || reduced ? 0 : 1100).ease(d3.easeCubicInOut);
-      if (!zoomed && !reduced && !instant) {
-        // fly past: overshoot then settle, so the approach reads as travel
-        t.attrTween("transform", () => {
-          const i = d3.interpolate([0, 0, 1], [tx, ty, k]);
-          return (u) => { const [x, y, s] = i(u); const bump = Math.sin(u * Math.PI) * 0.18; return `translate(${x},${y}) scale(${s * (1 + bump)})`; };
-        });
-      } else t.attr("transform", `translate(${tx},${ty}) scale(${k})`);
-      zoomed = true;
+      // d3's zoom interpolator pulls out then dives in, which reads as travel
+      svg.transition().duration(instant || reduced ? 0 : 1100).ease(d3.easeCubicInOut)
+        .call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(k));
     }
     return { render, focus };
   }
@@ -521,7 +589,18 @@
   }
 
   // ------------------------------------------------------------- controls
-  $$(".tab").forEach((t) => t.addEventListener("click", () => { stars.warp(null, null, 5); setView(t.dataset.view); }));
+  $$(".tab").forEach((t) => t.addEventListener("click", () => { stars.warp(null, null, 5); SWSound.tab(); setView(t.dataset.view); }));
+  document.addEventListener("click", (e) => { if (e.target.closest(".chip, .lk, .zoomctl button, .p-close, .evt button, #sfNext")) SWSound.click(); }, true);
+  document.addEventListener("pointerover", (e) => { if (e.target.closest(".bubble, .card .head, .tcard, .tab, .chip, .lk")) SWSound.tick(); }, true);
+  document.addEventListener("pointerdown", () => SWSound.unlock(), { once: true, capture: true });
+  const muteBtn = $("#mute");
+  const paintMute = () => { muteBtn.setAttribute("aria-pressed", String(SWSound.muted)); muteBtn.textContent = SWSound.muted ? "Audio off" : "Audio on"; };
+  paintMute();
+  muteBtn.addEventListener("click", () => { SWSound.toggleMute(); paintMute(); });
+  // HUD readouts: clock and cursor position
+  const roClock = $("#roClock"), roPos = $("#roPos");
+  setInterval(() => { const d = new Date(); roClock.textContent = `GST ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`; }, 1000);
+  addEventListener("pointermove", (e) => { roPos.textContent = `Cursor ${String(e.clientX).padStart(4, "0")} · ${String(e.clientY).padStart(4, "0")}`; }, { passive: true });
   $$("#typeFilters .chip").forEach((b) => b.addEventListener("click", () => {
     const on = b.getAttribute("aria-pressed") !== "true";
     b.setAttribute("aria-pressed", String(on));
@@ -553,5 +632,15 @@
   const startView = ["timeline", "characters", "planets", "creators", "tech"].includes(hash) ? hash : "timeline";
   $("#count").textContent = `${IX.vm.length} / ${D.media.length} entries`;
   setView(startView, false);
+  (function boot() {
+    const el = $("#boot"), lines = $$(".l", el), bar = $(".bar i", el);
+    let seen = false; try { seen = sessionStorage.getItem("sw-booted") === "1"; } catch (e) {}
+    const finish = () => { el.classList.add("off"); try { sessionStorage.setItem("sw-booted", "1"); } catch (e) {} setTimeout(() => el.remove(), 600); };
+    if (seen || reduced) { finish(); return; }
+    el.addEventListener("click", () => { SWSound.unlock(); SWSound.boot(); finish(); }, { once: true });
+    requestAnimationFrame(() => (bar.style.width = "100%"));
+    lines.forEach((l, i) => setTimeout(() => { l.classList.add("on"); if (i === 2) $("#bootN").textContent = `${D.media.length} OK`; }, 120 + i * 220));
+    setTimeout(finish, 1500);
+  })();
   // pre-render the other charts lazily on first visit; timeline is ready now.
 })();

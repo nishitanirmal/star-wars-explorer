@@ -586,9 +586,10 @@
     function relabel() {
       if (!g) return;
       const topR = [...nodes].sort((a, b) => b.r - a.r).slice(0, 8).map((n) => n.id); // the biggest always carry a name
+      g.selectAll(".clabel").style("font-size", 10 / k + "px").style("letter-spacing", 0.2 / k + "em").attr("y", (d) => d.y - d.r - 6 / k); // cluster titles keep their on-screen size
       g.selectAll(".bubble").each(function (d) {
         const t = d3.select(this).select("text.lbl"); if (t.empty()) return;
-        const R = d.r * k, fsS = R > 40 ? 12 : R > 22 ? 11 : 10;        // font size on screen
+        const R = d.r * k, fsS = R > 40 ? 12 : 11;                      // font size on screen
         const fits = d.label.length * fsS * 0.62 < R * 2 - 6;
         const selected = d.id === sel, highlighted = this.classList.contains("rel");
         const show = selected || highlighted || topR.includes(d.id) || (R >= 9 && fits) || (R >= 30);
@@ -598,6 +599,7 @@
       });
       // Collision pass: labels outside their bubble must not sit on top of each other.
       // Higher priority wins; a highlighted label is nudged down, a lesser one is hidden.
+      g.selectAll(".bubble").each(function (d) { d3.select(this).select("rect.lblbg").style("display", "none"); });
       const taken = [];
       const overlaps = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
       const shown = nodes.filter((d) => d._shown).sort((a, b) => b._pri - a._pri || b.r - a.r);
@@ -610,6 +612,11 @@
         while (taken.some((t) => overlaps(r, t)) && d._pri >= 2 && tries < 4) { el.attr("dy", parseFloat(el.attr("dy")) + 11 / k); r = rect(); tries++; }
         if (taken.some((t) => overlaps(r, t)) && d._pri < 3) { if (d._pri < 2 || tries >= 4) { el.style("display", "none"); continue; } }
         taken.push(r);
+        if (!d._fits) {   // backing plate, padded in screen pixels
+          const b = node.getBBox(), px = 4 / k, py = 2 / k;
+          g.selectAll(".bubble").filter((x) => x === d).select("rect.lblbg")
+            .attr("x", b.x - px).attr("y", b.y - py).attr("width", b.width + px * 2).attr("height", b.height + py * 2).attr("rx", 2 / k).style("display", null);
+        }
       }
     }
     function size() { const r = svg.node().getBoundingClientRect(); W = r.width || 800; H = r.height || 600; svg.attr("viewBox", `0 0 ${W} ${H}`); zoom.translateExtent([[0, 0], [W, H]]).extent([[0, 0], [W, H]]); }
@@ -709,6 +716,7 @@
       b.append("circle").attr("class", "ring").attr("r", (d) => d.r + 3);
       b.append("circle").attr("class", "core").attr("r", 0).transition().duration(reduced ? 0 : 700).delay((d, i) => i * 4).ease(d3.easeBackOut).attr("r", (d) => d.r);
       nodes.forEach((d) => (d.label = shortName(d.name)));
+      b.append("rect").attr("class", "lblbg");
       b.append("text").attr("class", "lbl").attr("dy", "0.35em").text((d) => d.label);
       b.append("title").text((d) => `${d.name} · ${IX.charMedia[d.id].length} appearances`);
     },
@@ -740,6 +748,7 @@
       for (const k of [-0.33, -0.66]) b.append("ellipse").attr("class", "lat").attr("rx", (d) => d.r * Math.sqrt(1 - k * k)).attr("ry", (d) => d.r * Math.sqrt(1 - k * k) * 0.28).attr("cy", (d) => -d.r * k);
       b.append("ellipse").attr("class", "lat").attr("rx", (d) => d.r * 0.35).attr("ry", (d) => d.r);
       nodes.forEach((d) => (d.label = d.name));
+      b.append("rect").attr("class", "lblbg");
       b.append("text").attr("class", "lbl").text((d) => d.label);
       b.append("title").text((d) => `${d.name} · ${IX.planetMedia[d.id].length} appearances`);
     },
@@ -764,6 +773,7 @@
       b.append("circle").attr("class", "ring").attr("r", (d) => d.r + 3);
       b.append("circle").attr("class", "core").attr("r", 0).transition().duration(reduced ? 0 : 700).delay((d, i) => i * 5).ease(d3.easeBackOut).attr("r", (d) => d.r);
       nodes.forEach((d) => (d.label = d.name.replace(/\s*\(.*\)/, "").split(" ").filter((w) => !/^(II|III|IV|Jr\.?|Sr\.?)$/.test(w)).slice(-1)[0]));
+      b.append("rect").attr("class", "lblbg");
       b.append("text").attr("class", "lbl").attr("dy", "0.35em").text((d) => d.label);
       b.append("title").text((d) => `${d.name} · ${IX.creatorMedia[d.id].length} works`);
     },

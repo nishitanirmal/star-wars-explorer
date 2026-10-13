@@ -77,8 +77,8 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   background-size: 64px 64px; mask-image: radial-gradient(ellipse at 40% 50%, #000 20%, transparent 75%); }
 
 /* ---------- top bar ---------- */
-#bar { position: fixed; top: env(safe-area-inset-top, 0px); left: 0; right: 0; z-index: 5; min-height: var(--bar-h);
-  display: grid; grid-template-rows: auto auto; grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 10px 16px 0;
+#bar { position: fixed; top: env(safe-area-inset-top, 0px); left: 0; right: 0; z-index: 5;
+  display: grid; grid-template-rows: auto auto; grid-template-columns: minmax(0, 1fr); align-content: start; gap: 10px; padding: 10px 16px 0;
   background: linear-gradient(var(--bg) 70%, transparent); }
 .brand { display: flex; align-items: baseline; gap: 14px; min-width: 0; }
 .brand h1 { font: 15px/1 var(--display); letter-spacing: .18em; margin: 0; text-transform: uppercase; white-space: nowrap; }
@@ -421,11 +421,11 @@ svg.dim .bubble:not(.sel):not(.rel) { opacity: .28; }
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="data.js?v=202610131014"></script>
-<script src="arcs.js?v=202610131014"></script>
-<script src="sites.js?v=202610131014"></script>
-<script src="models.js?v=202610131014"></script>
-<script src="sound.js?v=202610131014"></script>
-<script src="app.js?v=202610131014"></script>
+<script src="data.js?v=202610131015"></script>
+<script src="arcs.js?v=202610131015"></script>
+<script src="sites.js?v=202610131015"></script>
+<script src="models.js?v=202610131015"></script>
+<script src="sound.js?v=202610131015"></script>
+<script src="app.js?v=202610131015"></script>
 </body>
 </html>

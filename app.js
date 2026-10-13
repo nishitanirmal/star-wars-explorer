@@ -117,12 +117,24 @@
     if (disposeModel) { disposeModel(); disposeModel = null; }
     panelBody.innerHTML = html;
     panelBody.scrollTop = 0;
-    if (matchMedia("(max-width: 900px)").matches) {
-      // on phones a selection nudges the drawer instead of opening it
-      if (!panel.classList.contains("open")) { panel.classList.remove("bounce"); void panel.offsetWidth; panel.classList.add("bounce"); }
-      const t = $(".p-title", panelBody); $("#pHint").textContent = t ? t.textContent : "";
-    } else panel.classList.add("open");
+    if (matchMedia("(max-width: 900px)").matches) summaryTab(); // phones: the tab carries the summary, the drawer stays where it is
+    else panel.classList.add("open");
     if (!reduced) { panelBody.classList.remove("decode"); panel.classList.remove("scan"); void panelBody.offsetWidth; panelBody.classList.add("decode"); panel.classList.add("scan"); }
+  }
+  // Phone tab summary: thumbnail, name, one-line hook and kicker from whatever the panel is showing.
+  const firstSentence = (t) => { const m = (t || "").match(/^.*?[.!?](\s|$)/); return (m ? m[0] : t || "").trim(); };
+  let thumbWatch = null;
+  function summaryTab(idle = false) {
+    const name = $("#pName"), hook = $("#pHook"), kick = $("#pKick"), thumb = $("#pThumb");
+    if (thumbWatch) { thumbWatch.disconnect(); thumbWatch = null; }
+    thumb.innerHTML = `<span>${idle ? "Details" : "Still"}</span>`;
+    if (idle) { name.textContent = "Details"; hook.textContent = "Tap anything on the chart to see who or what it is."; kick.textContent = ""; return; }
+    const t = $(".p-title", panelBody), k = $(".p-kicker", panelBody), p = $(".p-text", panelBody);
+    name.textContent = t ? t.textContent : "Details";
+    kick.textContent = k ? k.textContent : "";
+    hook.textContent = p ? firstSentence(p.textContent) : "";
+    const grab = () => { const img = $(".p-real img, .p-visual img", panelBody); if (img && img.src) { thumb.innerHTML = `<img src="${img.src}" alt="" referrerpolicy="no-referrer">`; return true; } return false; };
+    if (!grab()) { thumbWatch = new MutationObserver(() => { if (grab()) { thumbWatch.disconnect(); thumbWatch = null; } }); thumbWatch.observe(panelBody, { childList: true, subtree: true, attributes: true, attributeFilter: ["src"] }); }
   }
   function idlePanel() {
     const msgs = {
@@ -133,7 +145,7 @@
       tech: "Select a weapon, gadget or ship. Drag to turn the hologram, scroll to zoom.",
     };
     showPanel(`<div class="p-kicker">Readout</div><div class="idle">${TIE_SVG}${msgs[state.view]}<br><br>Filters in the bar apply to every view. ${IX.vm.length} of ${D.media.length} entries shown.</div>`);
-    panel.classList.remove("open", "bounce"); $("#pHint").textContent = "";
+    panel.classList.remove("open"); summaryTab(true);
   }
 
   function panelMedia(m) {
@@ -412,7 +424,8 @@
       if (mode === "real") loadReal(spec, $(".p-real", wrap));
     }
   });
-  $("#pClose").addEventListener("click", (e) => { e.stopPropagation(); panel.classList.remove("open"); });
+  $("#pClose").addEventListener("click", (e) => { e.stopPropagation(); panel.classList.remove("open"); SWSound.close(); });
+  $("#pMore").addEventListener("click", (e) => { e.stopPropagation(); panel.classList.add("open"); SWSound.open(); });
   new MutationObserver(() => document.body.classList.toggle("drawer-open", panel.classList.contains("open"))).observe(panel, { attributes: true, attributeFilter: ["class"] });
   // Phone drawer: drag the grip either way, swipe down on the content to close,
   // swipe up on the bottom tab to open, tap the tab to toggle.
@@ -420,9 +433,9 @@
     const h = $("#pHandle"), body = panelBody;
     let y0 = 0, t0 = 0, dy = 0, drag = false, src = null;
     const isPhone = () => matchMedia("(max-width: 900px)").matches;
-    const PEEK = 46, MIN = 40;
+    const PEEK = 76, MIN = 40;
     function start(e, from) {
-      if (!isPhone() || e.target.closest("#pClose") || e.pointerType === "mouse" && from === "body") return;
+      if (!isPhone() || e.target.closest("#pClose, #pMore") || e.pointerType === "mouse" && from === "body") return;
       const open = panel.classList.contains("open");
       if (from === "body" && (!open || body.scrollTop > 0)) return; // let the content scroll normally
       drag = true; src = from; dy = 0; y0 = e.clientY; t0 = performance.now();
@@ -824,7 +837,7 @@
   setInterval(() => { const d = new Date(); roClock.textContent = `GST ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`; }, 1000);
   // Live visit counter (Abacus, an open hit-counter service). Every load logs a traveller.
   (async function visits() {
-    const out = $("#roVisits"), tab = $("#pVisits") || { textContent: "" };
+    const out = $("#roVisits"), tab = { textContent: "" };
     try {
       const j = await (await fetch(`https://abacus.jasoncameron.dev/hit/nishitanirmal-sw-explorer/visits`)).json();
       const n = +j.value || 0, t0 = performance.now(), dur = reduced ? 0 : 1200;

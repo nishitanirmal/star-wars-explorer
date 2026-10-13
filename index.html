@@ -295,21 +295,27 @@ svg.dim .bubble:not(.sel):not(.rel) { opacity: .28; }
   .count { display: none; }
   #stage { right: 0; }
   #panel { top: auto; left: 0; right: 0; bottom: 0; width: 100%; height: 75dvh; max-height: 75vh; border-left: 0; border-top: 1px solid var(--line);
-    background: rgba(4,6,18,.97); transform: translateY(calc(100% - var(--peek))); transition: transform .45s cubic-bezier(.2,.8,.2,1); --peek: 46px;
+    background: rgba(4,6,18,.97); transform: translateY(calc(100% - var(--peek))); transition: transform .45s cubic-bezier(.2,.8,.2,1); --peek: 76px;
     box-shadow: 0 -12px 40px rgba(0,0,0,.6); touch-action: none; }
   #panel.open { transform: translateY(0); }
   #panel.dragging { transition: none; }
-  @keyframes drawer-bounce { 0%, 100% { transform: translateY(calc(100% - var(--peek))); } 35% { transform: translateY(calc(100% - var(--peek) - 26px)); } 70% { transform: translateY(calc(100% - var(--peek) + 4px)); } }
-  #panel.bounce:not(.open) { animation: drawer-bounce .55s cubic-bezier(.2,.8,.2,1); }
-  .p-hlabel small { font: 10px var(--mono); letter-spacing: .1em; color: var(--ink-dim); margin-left: 10px; text-transform: none; }
-  #pHint:not(:empty) + #pVisits { display: none; }
+
   #panelBody { touch-action: pan-y; overscroll-behavior: contain; padding: 12px 16px calc(24px + env(safe-area-inset-bottom, 0px)); }
   .p-handle::after { content: ""; position: absolute; left: 0; right: 0; top: -14px; height: 14px; }  /* bigger swipe target above the grip */
-  .p-handle { display: grid; grid-template-columns: 1fr auto; align-items: center; height: var(--peek); padding: 0 12px 0 16px; position: relative; cursor: grab; border-bottom: 1px solid var(--line-soft); }
-  .p-handle .grip { position: absolute; left: 50%; top: 6px; width: 44px; height: 3px; margin-left: -22px; background: var(--line); opacity: .8; }
-  .p-hlabel { font: 12px var(--display); letter-spacing: .2em; text-transform: uppercase; color: var(--ink); padding-top: 6px; }
-  .p-hlabel::before { content: ""; display: inline-block; width: 5px; height: 5px; background: var(--red); margin-right: 10px; vertical-align: 2px; box-shadow: 0 0 8px var(--red); }
-  #panel:not(.open) .p-close { visibility: hidden; }
+  #v-timeline, #v-tech { padding-bottom: 170px; }
+  .p-handle { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 10px; align-items: center; height: var(--peek); padding: 8px 12px 0 12px; position: relative; cursor: grab; border-bottom: 1px solid var(--line-soft); }
+  .p-handle .grip { position: absolute; left: 50%; top: 4px; width: 44px; height: 3px; margin-left: -22px; background: var(--line); opacity: .8; }
+  .p-thumb { width: 52px; height: 52px; border: 1px solid var(--line-soft); background: linear-gradient(135deg, rgba(47,87,232,.35), rgba(2,3,10,.9)); display: grid; place-items: center; overflow: hidden; }
+  .p-thumb span { font: 7px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-dim); }
+  .p-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .p-meta { min-width: 0; }
+  .p-hlabel { font: 11px var(--display); letter-spacing: .06em; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .p-hlabel::before { content: ""; display: inline-block; width: 5px; height: 5px; background: var(--red); margin-right: 8px; vertical-align: 2px; box-shadow: 0 0 8px var(--red); }
+  .p-hook { font: 10px/1.4 var(--sans); color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+  .p-kick { font: 8px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--glow); margin-top: 2px; min-height: 10px; }
+  .p-more { font: 9px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--glow); border: 1px solid var(--line-soft); padding: 5px 8px; white-space: nowrap; }
+  #panel.open .p-more { display: none; }
+  #panel:not(.open) .p-close { display: none; }
   /* tiny visits pill in the bottom corner, above the drawer tab */
   /* slim footer strip under the drawer; the travellers readout sits in its right corner */
   :root { --foot: 22px; }
@@ -322,7 +328,6 @@ svg.dim .bubble:not(.sel):not(.rel) { opacity: .28; }
   #status .visits { margin: 0; padding: 1px 8px; font-size: 9px; box-shadow: none; }
   #status .visits b { font-size: 10px; }
   #panel { bottom: calc(var(--foot) + env(safe-area-inset-bottom, 0px)); height: calc(75dvh - var(--foot)); max-height: calc(75vh - var(--foot)); }
-  #pVisits { display: none; }
   #v-timeline, #v-tech { padding-bottom: 140px; }
   #v-timeline, #v-tech { padding-left: 16px; padding-right: 16px; }
   .tl-head { margin-left: -16px; margin-right: -16px; padding-left: 16px; padding-right: 16px; }
@@ -331,8 +336,8 @@ svg.dim .bubble:not(.sel):not(.rel) { opacity: .28; }
   .era::before { left: 74px; }
   .card { grid-template-columns: 68px 1fr; gap: 10px; transform-origin: 78px 50%; }
   /* legend and zoom buttons ride above the drawer tab, and step aside when it opens */
-  .legend { position: fixed; left: 10px; bottom: calc(46px + var(--foot) + 10px + env(safe-area-inset-bottom, 0px)); z-index: 5; gap: 8px; padding: 5px 8px; transition: opacity .3s; }
-  .zoomctl { position: fixed; right: 10px; bottom: calc(46px + var(--foot) + 10px + env(safe-area-inset-bottom, 0px)); z-index: 5; transition: opacity .3s; }
+  .legend { position: fixed; left: 10px; bottom: calc(76px + var(--foot) + 10px + env(safe-area-inset-bottom, 0px)); z-index: 5; gap: 8px; padding: 5px 8px; transition: opacity .3s; }
+  .zoomctl { position: fixed; right: 10px; bottom: calc(76px + var(--foot) + 10px + env(safe-area-inset-bottom, 0px)); z-index: 5; transition: opacity .3s; }
   .view:not(.on) .legend, .view:not(.on) .zoomctl { display: none; }
   body.drawer-open .legend, body.drawer-open .zoomctl { opacity: 0; pointer-events: none; }
 
@@ -415,17 +420,20 @@ svg.dim .bubble:not(.sel):not(.rel) { opacity: .28; }
 </main>
 
 <aside id="panel" aria-live="polite">
-  <div class="p-handle" id="pHandle"><span class="grip" aria-hidden="true"></span><span class="p-hlabel">Details<small id="pHint"></small><small id="pVisits"></small></span><button class="p-close" id="pClose">Close</button></div>
+  <div class="p-handle" id="pHandle"><span class="grip" aria-hidden="true"></span>
+    <div class="p-thumb" id="pThumb"><span>Details</span></div>
+    <div class="p-meta"><div class="p-hlabel" id="pName">Details</div><div class="p-hook" id="pHook">Tap anything on the chart to see who or what it is.</div><div class="p-kick" id="pKick"></div></div>
+    <button class="p-more" id="pMore">Read more ↑</button><button class="p-close" id="pClose">Close</button></div>
   <div id="panelBody"></div>
 </aside>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="data.js?v=202610131015"></script>
-<script src="arcs.js?v=202610131015"></script>
-<script src="sites.js?v=202610131015"></script>
-<script src="models.js?v=202610131015"></script>
-<script src="sound.js?v=202610131015"></script>
-<script src="app.js?v=202610131015"></script>
+<script src="data.js?v=202610131054"></script>
+<script src="arcs.js?v=202610131054"></script>
+<script src="sites.js?v=202610131054"></script>
+<script src="models.js?v=202610131054"></script>
+<script src="sound.js?v=202610131054"></script>
+<script src="app.js?v=202610131054"></script>
 </body>
 </html>
